@@ -32,8 +32,16 @@ class _AppShellState extends State<AppShell> {
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _index, children: screens),
-      bottomNavigationBar: _BottomNav(currentIndex: _index, onTap: setIndex),
+      backgroundColor: AppColors.bg,
+      body: Stack(
+        children: [
+          IndexedStack(index: _index, children: screens),
+          Positioned(
+            bottom: 0, left: 0, right: 0,
+            child: _BottomNav(currentIndex: _index, onTap: setIndex),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -45,24 +53,80 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            children: [
-              _item(0, Icons.home_rounded, 'Home'),
-              _item(1, Icons.grass_rounded, 'Fields'),
-              _scanButton(),
-              _item(3, Icons.people_rounded, 'Community'),
-              _item(4, Icons.person_rounded, 'Profile'),
-            ],
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    // Total height = 32px (half of 64px scan button) + 64px nav + safe area
+    // Scan button center sits at the top border of the nav bar
+    const navH = 62.0;
+    const scanR = 32.0; // half of 64px scan button
+
+    return SizedBox(
+      height: scanR + navH + bottomPad,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Nav bar background
+          Positioned(
+            bottom: 0, left: 0, right: 0,
+            child: Container(
+              height: navH + bottomPad,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: AppColors.border, width: 0.5),
+                ),
+              ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    _item(0, Icons.home_rounded, 'Home'),
+                    _item(1, Icons.grass_rounded, 'Fields'),
+                    // Space for floating scan button
+                    const SizedBox(width: 72),
+                    _item(3, Icons.people_rounded, 'Community'),
+                    _item(4, Icons.person_rounded, 'Profile'),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          // Floating scan button — center aligns with nav top border
+          Positioned(
+            top: 0, left: 0, right: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  onTap(2);
+                },
+                child: Container(
+                  width: 64, height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 16,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.document_scanner_rounded,
+                    color: Colors.white,
+                    size: 27,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -73,92 +137,31 @@ class _BottomNav extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => onTap(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedScale(
-                scale: selected ? 1.15 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                child: Icon(icon, size: 22,
-                  color: selected ? AppColors.primary : const Color(0xFFAAAAAA)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedScale(
+              scale: selected ? 1.1 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              child: Icon(
+                icon,
+                size: 22,
+                color: selected ? AppColors.primary : const Color(0xFFAAAAAA),
               ),
-              const SizedBox(height: 3),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-                  color: selected ? AppColors.primary : const Color(0xFFAAAAAA),
-                ),
-                child: Text(label),
+            ),
+            const SizedBox(height: 3),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                color: selected ? AppColors.primary : const Color(0xFFAAAAAA),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _scanButton() {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => onTap(2),
-        child: Center(child: _PulsingScanButton(selected: currentIndex == 2)),
-      ),
-    );
-  }
-}
-
-class _PulsingScanButton extends StatefulWidget {
-  final bool selected;
-  const _PulsingScanButton({required this.selected});
-  @override
-  State<_PulsingScanButton> createState() => _PulsingScanButtonState();
-}
-
-class _PulsingScanButtonState extends State<_PulsingScanButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _pulse;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
-      ..repeat(reverse: true);
-    _pulse = Tween(begin: 1.0, end: 1.12).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (_, child) => Transform.scale(
-        scale: _pulse.value,
-        child: child,
-      ),
-      child: Container(
-        width: 54, height: 54,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              child: Text(label),
             ),
           ],
         ),
-        child: const Icon(Icons.document_scanner_rounded, color: Colors.white, size: 24),
       ),
     );
   }

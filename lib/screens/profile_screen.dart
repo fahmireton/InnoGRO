@@ -1,46 +1,232 @@
 import 'package:flutter/material.dart';
 import '../app_theme_notifier.dart';
+import '../theme.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
 
-  static const _bg = Color(0xFF0D1F0F);
-  static const _card = Color(0xFF1A2E1C);
-  static const _card2 = Color(0xFF162617);
-  static const _greenDark = Color(0xFF2D5A3D);
-  static const _textPrimary = Color(0xFFEEEEEE);
-  static const _textSecondary = Color(0xFF7A9E82);
-  static const _divider = Color(0xFF243826);
+class _ProfileScreenState extends State<ProfileScreen> {
+  final _nameCtrl = TextEditingController(text: 'Farmer');
+  final _farmCtrl = TextEditingController(text: 'My Paddy Farm');
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _farmCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
           children: [
             const Text('Profile',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: _textPrimary, letterSpacing: -0.5)),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary, letterSpacing: -0.5)),
             const SizedBox(height: 2),
             const Text('Personalise your farm',
-              style: TextStyle(fontSize: 14, color: _textSecondary)),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
             const SizedBox(height: 20),
-            _avatarCard(),
-            const SizedBox(height: 16),
-            _premiumCard(),
+
+            // Avatar + editable name card
+            _card(child: Row(children: [
+              // Avatar gradient circle
+              Container(
+                width: 64, height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.6)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    _nameCtrl.text.isNotEmpty ? _nameCtrl.text[0].toUpperCase() : 'F',
+                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                TextField(
+                  controller: _nameCtrl,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false,
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                TextField(
+                  controller: _farmCtrl,
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false,
+                  ),
+                ),
+              ])),
+            ])),
+
+            const SizedBox(height: 14),
+
+            // Premium card
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 44, height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('VisionGRO Premium',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+                  SizedBox(height: 2),
+                  Text('Unlock advanced AI features',
+                    style: TextStyle(fontSize: 12, color: Colors.white70)),
+                ])),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                  child: const Text('Upgrade',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                ),
+              ]),
+            ),
+
             const SizedBox(height: 24),
             _sectionLabel('PREFERENCES'),
             const SizedBox(height: 10),
-            _prefsCard(),
+
+            // Preferences card
+            _card(child: Column(children: [
+              // Region
+              _prefRow(
+                label: 'Region',
+                right: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text('Selangor', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                ),
+              ),
+              _divLine(),
+              // Theme toggle
+              _prefRow(
+                label: 'Theme',
+                right: ListenableBuilder(
+                  listenable: appTheme,
+                  builder: (_, __) => Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(appTheme.isDark ? 'Dark' : 'Light',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: appTheme.toggle,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: 44, height: 24,
+                        decoration: BoxDecoration(
+                          color: appTheme.isDark ? AppColors.accent : const Color(0xFFD0D0D0),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: AnimatedAlign(
+                          duration: const Duration(milliseconds: 250),
+                          alignment: appTheme.isDark ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            width: 20, height: 20,
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+              _divLine(),
+              // Units
+              _prefRow(
+                label: 'Units',
+                right: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text('Metric', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                    SizedBox(width: 4),
+                    Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 16),
+                  ]),
+                ),
+              ),
+              _divLine(),
+              // Language
+              _prefRow(
+                label: 'Language',
+                right: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text('English', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                    SizedBox(width: 4),
+                    Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 16),
+                  ]),
+                ),
+              ),
+            ])),
+
             const SizedBox(height: 24),
             _sectionLabel('DATA'),
             const SizedBox(height: 10),
-            _dataCard(),
+
+            // Data card
+            _card(child: Column(children: [
+              _dataRow('Export data', AppColors.textPrimary),
+              _divLine(),
+              _dataRow('Privacy controls', AppColors.textPrimary),
+              _divLine(),
+              _dataRow('Clear all data', AppColors.red),
+            ])),
+
             const SizedBox(height: 32),
             const Center(
-              child: Text('PadiGuard AI · v1.0 · Made for smallholder farmers',
-                style: TextStyle(fontSize: 11, color: _textSecondary)),
+              child: Text('VisionGRO · v1.0 · Made for smallholder farmers',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
             ),
           ],
         ),
@@ -48,182 +234,48 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _avatarCard() {
+  Widget _card({required Widget child}) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
+        ],
       ),
-      child: Row(children: [
-        Container(
-          width: 56, height: 56,
-          decoration: BoxDecoration(color: _greenDark, shape: BoxShape.circle),
-          child: const Center(
-            child: Text('F', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
-          ),
-        ),
-        const SizedBox(width: 16),
-        const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Farmer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _textPrimary)),
-          SizedBox(height: 2),
-          Text('My Paddy Farm', style: TextStyle(fontSize: 13, color: _textSecondary)),
-        ]),
-      ]),
+      child: child,
     );
   }
 
-  Widget _premiumCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E4D2B), Color(0xFF2D6A3F)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
+  Widget _prefRow({required String label, required Widget right}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(children: [
-        Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 22),
-        ),
-        const SizedBox(width: 14),
-        const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('PadiGuard Premium', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
-          SizedBox(height: 2),
-          Text('Unlock advanced AI features', style: TextStyle(fontSize: 12, color: Colors.white70)),
-        ])),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Text('Upgrade', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E4D2B))),
-        ),
-      ]),
-    );
-  }
-
-  Widget _prefsCard() {
-    return Container(
-      decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16)),
-      child: Column(children: [
-        _prefRow('Region', 'Selangor, Malaysia', false),
-        _dividerLine(),
-        _themeRow(),
-        _dividerLine(),
-        _prefDropdown('Units', 'Metric'),
-        _dividerLine(),
-        _prefDropdown('Language', 'English'),
-      ]),
-    );
-  }
-
-  Widget _prefRow(String label, String value, bool isDropdown) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(children: [
-        Text(label, style: const TextStyle(fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w500)),
+        Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500)),
         const Spacer(),
-        Text(value, style: const TextStyle(fontSize: 13, color: _textSecondary)),
-        if (isDropdown) const SizedBox(width: 4),
-        if (isDropdown) const Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary, size: 18),
+        right,
       ]),
     );
   }
 
-  Widget _themeRow() {
-    return ListenableBuilder(
-      listenable: appTheme,
-      builder: (_, __) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(children: [
-          const Text('Theme', style: TextStyle(fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w500)),
-          const Spacer(),
-          Row(children: [
-            Text(appTheme.isDark ? 'Dark' : 'Light', style: const TextStyle(fontSize: 12, color: _textSecondary)),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: appTheme.toggle,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                width: 44, height: 24,
-                decoration: BoxDecoration(
-                  color: appTheme.isDark ? const Color(0xFF52B788) : const Color(0xFF374151),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 250),
-                  alignment: appTheme.isDark ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    width: 20, height: 20,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                    child: Icon(appTheme.isDark ? Icons.dark_mode : Icons.light_mode, size: 12, color: Colors.grey),
-                  ),
-                ),
-              ),
-            ),
-          ]),
-        ]),
-      ),
-    );
-  }
-
-  Widget _prefDropdown(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(children: [
-        Text(label, style: const TextStyle(fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w500)),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(
-            color: _card2,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text(value, style: const TextStyle(fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w500)),
-            const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary, size: 14),
-          ]),
-        ),
-      ]),
-    );
-  }
-
-  Widget _dataCard() {
-    return Container(
-      decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16)),
-      child: Column(children: [
-        _dataRow('Export data', const Color(0xFFEEEEEE), isFirst: true),
-        _dividerLine(),
-        _dataRow('Privacy controls', const Color(0xFFEEEEEE)),
-        _dividerLine(),
-        _dataRow('Clear all data', const Color(0xFFDC2626), isLast: true),
-      ]),
-    );
-  }
-
-  Widget _dataRow(String label, Color color, {bool isFirst = false, bool isLast = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+  Widget _dataRow(String label, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(children: [
         Text(label, style: TextStyle(fontSize: 14, color: color, fontWeight: FontWeight.w500)),
         const Spacer(),
-        Icon(Icons.chevron_right_rounded, color: _textSecondary, size: 18),
+        const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 18),
       ]),
     );
   }
 
-  Widget _dividerLine() => Container(height: 1, color: _divider, margin: const EdgeInsets.symmetric(horizontal: 16));
+  Widget _divLine() => const Divider(height: 1, color: AppColors.border);
 
   Widget _sectionLabel(String t) => Text(t,
-    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _textSecondary, letterSpacing: 1.2));
+    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+      color: AppColors.textSecondary, letterSpacing: 1.2));
 }

@@ -12,176 +12,196 @@ class FieldsScreen extends StatefulWidget {
 }
 
 class _FieldsScreenState extends State<FieldsScreen> {
+  Future<void> _addField() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddFieldScreen()),
+    );
+    if (result != null && mounted) setState(() => sampleFields.add(result));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+        child: CustomScrollView(
+          slivers: [
+            // Header
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Row(children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('My Fields', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
-                    Text('${sampleFields.length} fields', style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+                    const Text('My Fields',
+                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary, letterSpacing: -0.5)),
+                    Text('${sampleFields.length} field${sampleFields.length == 1 ? '' : 's'}',
+                      style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
                   ])),
                   GestureDetector(
-                    onTap: () async {
-                      final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddFieldScreen()));
-                      if (result != null && mounted) setState(() => sampleFields.add(result));
-                    },
+                    onTap: _addField,
                     child: Container(
                       width: 40, height: 40,
-                      decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                      decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
                       child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
                     ),
                   ),
-                ],
+                ]),
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, crossAxisSpacing: 14, mainAxisSpacing: 14, childAspectRatio: 0.85),
-                  padding: const EdgeInsets.only(bottom: 100),
-                  itemCount: sampleFields.length + 1,
-                  itemBuilder: (context, i) {
-                    if (i == sampleFields.length) {
-                      return _AddFieldCard(onTap: () async {
-                        final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddFieldScreen()));
-                        if (result != null && mounted) setState(() => sampleFields.add(result));
-                      });
-                    }
-                    final f = sampleFields[i];
-                    return _FieldGridCard(field: f, onTap: () async {
-                      await Navigator.push(context, slideRoute(FieldDetailScreen(field: f)));
-                      setState(() {});
-                    });
-                  },
-                ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+            // Field list
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  ...sampleFields.asMap().entries.map((e) {
+                    final f = e.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _FieldCard(
+                        field: f,
+                        onTap: () async {
+                          await Navigator.push(context, slideRoute(FieldDetailScreen(field: f)));
+                          setState(() {});
+                        },
+                      ),
+                    );
+                  }),
+                  // Add field dashed button
+                  GestureDetector(
+                    onTap: _addField,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.6),
+                          width: 2,
+                          strokeAlign: BorderSide.strokeAlignCenter,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text('+ Add new field',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary)),
+                      ),
+                    ),
+                  ),
+                ]),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _FieldGridCard extends StatefulWidget {
+class _FieldCard extends StatefulWidget {
   final PaddyField field;
   final VoidCallback onTap;
-  const _FieldGridCard({required this.field, required this.onTap});
+  const _FieldCard({required this.field, required this.onTap});
   @override
-  State<_FieldGridCard> createState() => _FieldGridCardState();
+  State<_FieldCard> createState() => _FieldCardState();
 }
 
-class _FieldGridCardState extends State<_FieldGridCard> {
+class _FieldCardState extends State<_FieldCard> {
   bool _pressed = false;
-
-  Color get _bgTop {
-    switch (widget.field.healthStatus) {
-      case HealthStatus.healthy: return const Color(0xFFD4EDD9);
-      case HealthStatus.watch: return const Color(0xFFFFF0CC);
-      case HealthStatus.critical: return const Color(0xFFFFD4D4);
-    }
-  }
-  Color get _bgBottom {
-    switch (widget.field.healthStatus) {
-      case HealthStatus.healthy: return const Color(0xFFF0FAF2);
-      case HealthStatus.watch: return const Color(0xFFFFFAF0);
-      case HealthStatus.critical: return const Color(0xFFFFF0F0);
-    }
-  }
-  Color get _iconColor {
-    switch (widget.field.healthStatus) {
-      case HealthStatus.healthy: return AppColors.accent;
-      case HealthStatus.watch: return AppColors.amber;
-      case HealthStatus.critical: return AppColors.red;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final f = widget.field;
+    final days = DateTime.now().difference(f.plantedDate).inDays;
+
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.96 : 1.0,
+        scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: _pressed ? 4 : 10, offset: const Offset(0, 2))],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                children: [
-                  Container(
-                    height: 110,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [_bgTop, _bgBottom], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    ),
-                    child: Center(child: Icon(Icons.grass_rounded, size: 52, color: _iconColor)),
-                  ),
-                  Positioned(
-                    top: 10, right: 10,
-                    child: Container(width: 10, height: 10,
-                      decoration: BoxDecoration(color: _iconColor, shape: BoxShape.circle)),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(widget.field.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text(widget.field.location.split(',').first, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text('${widget.field.areaMorgen} ac · ${widget.field.stage.label}',
-                    style: TextStyle(fontSize: 11, color: _iconColor, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ]),
-              ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
+          clipBehavior: Clip.hardEdge,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Gradient header
+            Container(
+              height: 96,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    f.healthStatus.gradientStart,
+                    f.healthStatus.gradientEnd,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Stack(children: [
+                // Health badge
+                Positioned(
+                  bottom: 12, left: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: f.healthStatus.color.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: f.healthStatus.color.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(f.healthStatus.label,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                        color: f.healthStatus.color)),
+                  ),
+                ),
+                // Emoji
+                Positioned(
+                  top: 12, right: 16,
+                  child: Text(f.stage.emoji, style: const TextStyle(fontSize: 28)),
+                ),
+              ]),
+            ),
 
-class _AddFieldCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddFieldCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.divider, width: 1.5),
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_rounded, size: 32, color: AppColors.textSecondary),
-            SizedBox(height: 8),
-            Text('Add field', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-          ],
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(f.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16,
+                    color: AppColors.textPrimary),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(f.location,
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Text('${f.areaMorgen} ac',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  const Text(' · ', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Text(f.stage.label,
+                    style: TextStyle(fontSize: 12, color: f.healthStatus.color,
+                      fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  Text('$days days',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                ]),
+              ]),
+            ),
+          ]),
         ),
       ),
     );

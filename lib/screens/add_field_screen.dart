@@ -14,7 +14,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   final _areaCtrl = TextEditingController();
-  GrowthStage _stage = GrowthStage.seed;
+  GrowthStage _stage = GrowthStage.seedling;
 
   @override
   void dispose() {
@@ -47,7 +47,10 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
-        title: const Text('Add New Field'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        title: const Text('Add New Field',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         leading: IconButton(
           icon: const Icon(Icons.close_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -55,7 +58,8 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
         actions: [
           TextButton(
             onPressed: _submit,
-            child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+            child: const Text('Save',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
           ),
         ],
       ),
@@ -70,8 +74,9 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
             const SizedBox(height: 14),
             _input('Area (morgen)', 'e.g. 2.5', _areaCtrl, isNumber: true),
             const SizedBox(height: 24),
-            const Text('Current Growth Stage', style: TextStyle(
-              fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary)),
+            const Text('Current Growth Stage',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15,
+                color: AppColors.textPrimary)),
             const SizedBox(height: 12),
             ...GrowthStage.values.map((s) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -82,9 +87,9 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: _stage == s ? AppColors.accentLight : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: _stage == s ? AppColors.accent : AppColors.divider,
+                      color: _stage == s ? AppColors.primary : AppColors.border,
                       width: _stage == s ? 2 : 1,
                     ),
                   ),
@@ -114,7 +119,8 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text('Add Field', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              child: const Text('Add Field',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -126,12 +132,18 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14,
+          color: AppColors.textPrimary)),
         const SizedBox(height: 8),
         TextFormField(
           controller: ctrl,
-          keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
-          decoration: InputDecoration(hintText: hint, hintStyle: const TextStyle(color: AppColors.textSecondary)),
+          keyboardType: isNumber
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : TextInputType.text,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: AppColors.textSecondary),
+          ),
           validator: (v) {
             if (v == null || v.trim().isEmpty) return 'This field is required';
             if (isNumber && double.tryParse(v) == null) return 'Enter a valid number';
