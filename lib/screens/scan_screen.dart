@@ -207,58 +207,76 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
         ],
       ),
-      child: Column(children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Image comparison slider
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: SizedBox(
-            height: 200,
-            child: Stack(children: [
-              // Diseased side (right) — brown/orange
-              Positioned.fill(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFD4A574), Color(0xFFE8B88A)],
-                      begin: Alignment.centerLeft, end: Alignment.centerRight,
-                    ),
-                  ),
+          child: LayoutBuilder(builder: (context, constraints) {
+            final w = constraints.maxWidth;
+            return SizedBox(
+              height: 210,
+              child: Stack(children: [
+                // Diseased paddy — full background
+                SizedBox(
+                  width: w, height: 210,
+                  child: Image.asset('assets/images/paddy_diseased.png', fit: BoxFit.cover),
                 ),
-              ),
-              // Healthy side (left) — overlays the left portion
-              Positioned.fill(
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: _sliderValue,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF95D5A8), Color(0xFFB7E4C7)],
-                        begin: Alignment.centerLeft, end: Alignment.centerRight,
+                // Healthy paddy — clipped to left slider fraction
+                ClipRect(
+                  child: SizedBox(
+                    width: w * _sliderValue, height: 210,
+                    child: OverflowBox(
+                      maxWidth: w,
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: w, height: 210,
+                        child: Image.asset('assets/images/paddy_healthy.png', fit: BoxFit.cover),
                       ),
                     ),
                   ),
                 ),
-              ),
-              // Labels
-              Positioned(left: 16, bottom: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
-                  child: const Text('Healthy',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
-                )),
-              Positioned(right: 16, bottom: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: AppColors.red, borderRadius: BorderRadius.circular(20)),
-                  child: const Text('Diseased',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
-                )),
-            ]),
-          ),
+                // Divider line at slider position
+                Positioned(
+                  left: w * _sliderValue - 1,
+                  top: 0, bottom: 0,
+                  child: Container(width: 2, color: Colors.white),
+                ),
+                // Handle circle on divider
+                Positioned(
+                  left: w * _sliderValue - 16,
+                  top: 0, bottom: 0,
+                  child: Center(
+                    child: Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 6)],
+                      ),
+                      child: const Icon(Icons.compare_arrows_rounded, size: 18, color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                // Labels
+                Positioned(left: 12, bottom: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20)),
+                    child: const Text('Healthy', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                  )),
+                Positioned(right: 12, bottom: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: AppColors.red.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20)),
+                    child: const Text('Diseased', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                  )),
+              ]),
+            );
+          }),
         ),
+        // Slider control
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: SliderTheme(
             data: SliderThemeData(
               trackHeight: 4,
@@ -268,16 +286,67 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               thumbColor: AppColors.primary,
               overlayColor: AppColors.primary.withValues(alpha: 0.1),
             ),
-            child: Slider(
-              value: _sliderValue,
-              onChanged: (v) => setState(() => _sliderValue = v),
-            ),
+            child: Slider(value: _sliderValue, onChanged: (v) => setState(() => _sliderValue = v)),
           ),
         ),
         const Padding(
-          padding: EdgeInsets.only(bottom: 14),
-          child: Text('Drag to compare visual cues',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          padding: EdgeInsets.only(bottom: 6),
+          child: Center(child: Text('Drag to compare visual cues',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary))),
+        ),
+        // Factual info section
+        const Divider(height: 1, color: AppColors.border),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Healthy column
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
+                const SizedBox(width: 6),
+                const Text('Healthy Paddy', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+              ]),
+              const SizedBox(height: 8),
+              ...[
+                'Deep, uniform green leaves',
+                'Upright & turgid leaf blades',
+                '5–8 cm standing water depth',
+                'No spots or discoloration',
+                '5–7 tillers per plant',
+              ].map((s) => Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('• ', style: TextStyle(fontSize: 12, color: AppColors.accent)),
+                  Expanded(child: Text(s, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3))),
+                ]),
+              )),
+            ])),
+            const SizedBox(width: 12),
+            Container(width: 1, height: 120, color: AppColors.border),
+            const SizedBox(width: 12),
+            // Diseased column
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.red, shape: BoxShape.circle)),
+                const SizedBox(width: 6),
+                const Text('Diseased Paddy', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.red)),
+              ]),
+              const SizedBox(height: 8),
+              ...[
+                'Yellowing from leaf tips & edges',
+                'Brown lesions or water-soaked spots',
+                'Drooping or wilting leaves',
+                'Stunted & uneven plant height',
+                'Early senescence & poor tillering',
+              ].map((s) => Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('• ', style: TextStyle(fontSize: 12, color: AppColors.red)),
+                  Expanded(child: Text(s, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3))),
+                ]),
+              )),
+            ])),
+          ]),
         ),
       ]),
     );
