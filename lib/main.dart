@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'theme.dart';
+import 'app_theme_notifier.dart';
 import 'screens/shell.dart';
 
 void main() {
@@ -14,11 +15,16 @@ class VisionGROApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'VisionGRO',
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(),
-      home: const AppShell(),
+    return ListenableBuilder(
+      listenable: appTheme,
+      builder: (_, __) => MaterialApp(
+        title: 'VisionGRO',
+        debugShowCheckedModeBanner: false,
+        themeMode: appTheme.mode,
+        theme: buildTheme(),
+        darkTheme: buildDarkTheme(),
+        home: const AppShell(),
+      ),
     );
   }
 }

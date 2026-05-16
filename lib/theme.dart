@@ -18,6 +18,31 @@ class AppColors {
   static const cardShadow = Color(0x12000000);
 }
 
+ThemeData buildDarkTheme() {
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.dark,
+    ).copyWith(primary: AppColors.accent, secondary: AppColors.accent, surface: const Color(0xFF1A2E1C)),
+    scaffoldBackgroundColor: const Color(0xFF0D1F0F),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF0D1F0F),
+      foregroundColor: Color(0xFFEEEEEE),
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
+    ),
+    cardTheme: CardThemeData(
+      color: const Color(0xFF1A2E1C),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: EdgeInsets.zero,
+    ),
+  );
+}
+
 ThemeData buildTheme() {
   return ThemeData(
     useMaterial3: true,

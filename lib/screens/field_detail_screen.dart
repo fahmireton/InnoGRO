@@ -37,8 +37,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               ),
               title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(f.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
-                Text(f.location.split(',').first == 'Paddy' ? f.location : 'Paddy (MR219)',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w400)),
+                const Text('Paddy (MR219)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w400)),
               ]),
               actions: [
                 Padding(
@@ -62,9 +61,9 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                   Flexible(child: Text(f.location, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ]),
                 const SizedBox(height: 24),
-                _sectionLabel('GROWTH STAGE'),
+                _sectionLabel('GROWTH TRACKING'),
                 const SizedBox(height: 12),
-                _growthStageCard(),
+                _growthTrackingCard(),
                 const SizedBox(height: 24),
                 _sectionLabel('DISEASE HISTORY'),
                 const SizedBox(height: 12),
@@ -108,54 +107,141 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
 
   Widget _vertDivider() => Container(height: 36, width: 1, color: AppColors.divider, margin: const EdgeInsets.symmetric(horizontal: 8));
 
-  Widget _growthStageCard() {
+  Widget _growthTrackingCard() {
     final stages = GrowthStage.values;
+    final currentIdx = f.stage.index;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 8, offset: const Offset(0, 2))],
       ),
-      child: Column(children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: stages.take(4).map((s) {
-              final selected = s == f.stage;
-              final passed = s.index < f.stage.index;
-              return GestureDetector(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Plant icons timeline
+        Row(
+          children: stages.map((s) {
+            final idx = s.index;
+            final isCurrent = idx == currentIdx;
+            final isPast = idx < currentIdx;
+            final opacity = isPast || isCurrent ? 1.0 : 0.3;
+            return Expanded(
+              child: GestureDetector(
                 onTap: () => setState(() {
                   f.stage = s;
                   f.activityLog.insert(0, 'Stage updated to ${s.label}');
                 }),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected ? AppColors.primary : passed ? AppColors.accentLight : AppColors.bg,
-                    borderRadius: BorderRadius.circular(30),
+                child: Column(children: [
+                  Opacity(
+                    opacity: opacity,
+                    child: Text(s.emoji,
+                      style: TextStyle(fontSize: 28 * s.iconScale),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  child: Text(s.label, style: TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600,
-                    color: selected ? Colors.white : passed ? AppColors.accent : AppColors.textSecondary)),
+                ]),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 10),
+        // Dots timeline
+        Row(
+          children: stages.map((s) {
+            final idx = s.index;
+            final isCurrent = idx == currentIdx;
+            final isPast = idx < currentIdx;
+            return Expanded(
+              child: Column(children: [
+                Stack(alignment: Alignment.center, children: [
+                  // connecting line
+                  if (idx < stages.length - 1)
+                    Positioned(
+                      left: 16,
+                      child: Container(
+                        height: 2,
+                        width: double.infinity,
+                        color: isPast ? AppColors.primary : AppColors.divider,
+                      ),
+                    ),
+                  Container(
+                    width: isCurrent ? 14 : 10,
+                    height: isCurrent ? 14 : 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isCurrent ? AppColors.primary : isPast ? AppColors.primary : Colors.white,
+                      border: Border.all(
+                        color: isCurrent || isPast ? AppColors.primary : AppColors.divider,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 6),
+                Text(s.label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
+                    color: isCurrent ? AppColors.textPrimary : AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              );
-            }).toList(),
-          ),
+              ]),
+            );
+          }).toList(),
         ),
-        const SizedBox(height: 14),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: LinearProgressIndicator(
-            value: f.stage.progress,
-            backgroundColor: AppColors.bg,
-            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-            minHeight: 6,
-          ),
-        ),
+        const SizedBox(height: 20),
+        // Current stage info card
+        _stageInfoCard(),
       ]),
     );
+  }
+
+  Widget _stageInfoCard() {
+    final stage = f.stage;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(stage.label, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.3)),
+            const SizedBox(height: 6),
+            Text(stage.description, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5)),
+            const SizedBox(height: 10),
+            const Text('Estimated days', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            Text(stage.dayRange, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary)),
+          ]),
+        ),
+        const SizedBox(width: 12),
+        Text(stage.emoji, style: const TextStyle(fontSize: 56)),
+      ]),
+      const SizedBox(height: 14),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: AppColors.accentLight, borderRadius: BorderRadius.circular(12)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Tips', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary)),
+          const SizedBox(height: 4),
+          Text(stage.tip, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5)),
+        ]),
+      ),
+      const SizedBox(height: 14),
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        const Text('Progress', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+        Text('${(stage.progress * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+      ]),
+      const SizedBox(height: 6),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: LinearProgressIndicator(
+          value: stage.progress,
+          backgroundColor: AppColors.bg,
+          valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+          minHeight: 8,
+        ),
+      ),
+    ]);
   }
 
   Widget _diseaseHistoryCard() {

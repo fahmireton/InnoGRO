@@ -2,6 +2,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/field.dart';
+import '../transitions.dart';
+import 'economic_tools_screen.dart';
+import 'knowledge_hub_screen.dart';
+import 'weather_detail_screen.dart';
+import 'alerts_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onScanTap;
@@ -127,7 +132,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 class _WeatherCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: () => Navigator.push(context, slideRoute(const WeatherDetailScreen())),
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -166,6 +173,7 @@ class _WeatherCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -332,8 +340,8 @@ class _DialPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    const startAngle = -math.pi * 0.75;
-    const sweepTotal = math.pi * 1.5;
+    const startAngle = math.pi;
+    const sweepTotal = math.pi;
 
     canvas.drawArc(Rect.fromCircle(center: center, radius: radius),
       startAngle, sweepTotal, false, trackPaint);
@@ -356,7 +364,10 @@ class _ScanBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 18, 18, 18),
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1B4332), Color(0xFF2D6A4F), Color(0xFF52B788)],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -417,15 +428,21 @@ class _RecentScansCard extends StatelessWidget {
 class _AlertsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 8, offset: const Offset(0, 2))],
+    return GestureDetector(
+      onTap: () => Navigator.push(context, slideRoute(const AlertsScreen())),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Row(children: [
+          const Expanded(child: Text('All clear. We\'ll notify you of risks.',
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary))),
+          const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textSecondary),
+        ]),
       ),
-      child: const Text('All clear. We\'ll notify you of risks.',
-        style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
     );
   }
 }
@@ -433,11 +450,11 @@ class _AlertsCard extends StatelessWidget {
 class _ExploreGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    const items = [
-      (Icons.trending_up_rounded, 'Economic tools'),
-      (Icons.menu_book_rounded, 'Knowledge hub'),
-      (Icons.cloud_rounded, 'Weather'),
-      (Icons.notifications_rounded, 'Alerts'),
+    final items = [
+      (Icons.trending_up_rounded, 'Economic tools', () => Navigator.push(context, slideRoute(const EconomicToolsScreen()))),
+      (Icons.menu_book_rounded, 'Knowledge hub', () => Navigator.push(context, slideRoute(const KnowledgeHubScreen()))),
+      (Icons.cloud_rounded, 'Weather', () => Navigator.push(context, slideRoute(const WeatherDetailScreen()))),
+      (Icons.notifications_rounded, 'Alerts', () => Navigator.push(context, slideRoute(const AlertsScreen()))),
     ];
     return GridView.count(
       crossAxisCount: 2,
@@ -446,7 +463,9 @@ class _ExploreGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 1.4,
-      children: items.map((item) => Container(
+      children: items.map((item) => GestureDetector(
+        onTap: item.$3,
+        child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -468,6 +487,7 @@ class _ExploreGrid extends StatelessWidget {
             Text(item.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
           ],
         ),
+      ),
       )).toList(),
     );
   }

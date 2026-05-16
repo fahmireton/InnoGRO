@@ -153,18 +153,29 @@ class _ScanScreenState extends State<ScanScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          SizedBox(
+          Container(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _diagnose,
-              icon: const Icon(Icons.auto_awesome, size: 18),
-              label: const Text('Diagnose with AI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                elevation: 0,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1B4332), Color(0xFF2D6A4F), Color(0xFF52B788)],
+                begin: Alignment.centerLeft, end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _diagnose,
+                borderRadius: BorderRadius.circular(30),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.auto_awesome, size: 18, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Diagnose with AI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                  ]),
+                ),
               ),
             ),
           ),

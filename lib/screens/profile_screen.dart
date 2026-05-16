@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_theme_notifier.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -115,7 +116,7 @@ class ProfileScreen extends StatelessWidget {
       child: Column(children: [
         _prefRow('Region', 'Selangor, Malaysia', false),
         _dividerLine(),
-        _prefDropdown('Theme', 'System'),
+        _themeRow(),
         _dividerLine(),
         _prefDropdown('Units', 'Metric'),
         _dividerLine(),
@@ -134,6 +135,44 @@ class ProfileScreen extends StatelessWidget {
         if (isDropdown) const SizedBox(width: 4),
         if (isDropdown) const Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary, size: 18),
       ]),
+    );
+  }
+
+  Widget _themeRow() {
+    return ListenableBuilder(
+      listenable: appTheme,
+      builder: (_, __) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(children: [
+          const Text('Theme', style: TextStyle(fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w500)),
+          const Spacer(),
+          Row(children: [
+            Text(appTheme.isDark ? 'Dark' : 'Light', style: const TextStyle(fontSize: 12, color: _textSecondary)),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: appTheme.toggle,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: 44, height: 24,
+                decoration: BoxDecoration(
+                  color: appTheme.isDark ? const Color(0xFF52B788) : const Color(0xFF374151),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 250),
+                  alignment: appTheme.isDark ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    width: 20, height: 20,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: Icon(appTheme.isDark ? Icons.dark_mode : Icons.light_mode, size: 12, color: Colors.grey),
+                  ),
+                ),
+              ),
+            ),
+          ]),
+        ]),
+      ),
     );
   }
 

@@ -14,7 +14,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   final _areaCtrl = TextEditingController();
-  GrowthStage _stage = GrowthStage.seedling;
+  GrowthStage _stage = GrowthStage.seed;
 
   @override
   void dispose() {
@@ -97,7 +97,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                         Text(s.label, style: TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 14,
                           color: _stage == s ? AppColors.primary : AppColors.textPrimary)),
-                        Text('~${s.daysToHarvest} days to harvest',
+                        Text(s.dayRange,
                           style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                       ],
                     )),
