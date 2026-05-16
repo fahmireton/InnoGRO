@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/field.dart';
 import '../transitions.dart';
+import '../widgets/growing_tree.dart';
 import 'field_detail_screen.dart';
 import 'add_field_screen.dart';
 
@@ -161,7 +162,7 @@ class _FieldCardState extends State<_FieldCard> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             // Gradient header
             Container(
-              height: 96,
+              height: 108,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -175,32 +176,29 @@ class _FieldCardState extends State<_FieldCard> {
               child: Stack(children: [
                 // Health badge
                 Positioned(
-                  bottom: 12,
+                  bottom: 10,
                   left: 16,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color:
-                          f.healthStatus.color.withValues(alpha: 0.2),
+                      color: Colors.white.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: f.healthStatus.color
-                              .withValues(alpha: 0.4)),
+                          color: Colors.white.withValues(alpha: 0.5)),
                     ),
                     child: Text(f.healthStatus.label,
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: f.healthStatus.color)),
+                            color: Colors.white)),
                   ),
                 ),
-                // Emoji
+                // Mini growing tree
                 Positioned(
-                  top: 12,
-                  right: 16,
-                  child:
-                      Text(f.stage.emoji, style: const TextStyle(fontSize: 28)),
+                  top: 4,
+                  right: 8,
+                  child: GrowingTreeWidget(stage: f.stage, size: 90),
                 ),
               ]),
             ),

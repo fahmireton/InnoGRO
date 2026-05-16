@@ -40,6 +40,24 @@ extension GrowthStageX on GrowthStage {
     GrowthStage.harvest: '🌾',
   }[this]!;
 
+  String get shortLabel => const {
+    GrowthStage.seedling: 'Seed',
+    GrowthStage.vegetative: 'Baby Plant',
+    GrowthStage.tillering: 'Growing',
+    GrowthStage.flowering: 'Flowering',
+    GrowthStage.ripening: 'Mature',
+    GrowthStage.harvest: 'Harvest',
+  }[this]!;
+
+  String get description => const {
+    GrowthStage.seedling: 'The seed is planted and waiting to sprout.',
+    GrowthStage.vegetative: 'The plant has sprouted and is developing its first leaves.',
+    GrowthStage.tillering: 'The plant is growing taller and getting stronger.',
+    GrowthStage.flowering: 'The plant is entering its flowering phase.',
+    GrowthStage.ripening: 'The plant is fully grown and almost ready to harvest.',
+    GrowthStage.harvest: 'Time to harvest! Enjoy your healthy crops.',
+  }[this]!;
+
   double get progress => const {
     GrowthStage.seedling: 0.0,
     GrowthStage.vegetative: 0.2,
@@ -73,15 +91,15 @@ extension HealthStatusX on HealthStatus {
 
   // Gradient colors for field card header
   Color get gradientStart => const {
-    HealthStatus.healthy: Color(0xFF85D4A8),
-    HealthStatus.watch: Color(0xFFF5C842),
-    HealthStatus.critical: Color(0xFFF28B82),
+    HealthStatus.healthy: Color(0xFF1E8C58),
+    HealthStatus.watch: Color(0xFFCC7A08),
+    HealthStatus.critical: Color(0xFFBB2020),
   }[this]!;
 
   Color get gradientEnd => const {
-    HealthStatus.healthy: Color(0xFFDCFCE7),
-    HealthStatus.watch: Color(0xFFFFF3CD),
-    HealthStatus.critical: Color(0xFFFEE2E2),
+    HealthStatus.healthy: Color(0xFF9EEDC4),
+    HealthStatus.watch: Color(0xFFF9D870),
+    HealthStatus.critical: Color(0xFFF4A0A0),
   }[this]!;
 }
 
@@ -111,6 +129,9 @@ class PaddyField {
   final DateTime plantedDate;
   List<String> activityLog;
   List<ScanRecord> scanHistory;
+  String variety;
+  double? latitude;
+  double? longitude;
 
   PaddyField({
     required this.id,
@@ -125,6 +146,9 @@ class PaddyField {
     required this.plantedDate,
     required this.activityLog,
     required this.scanHistory,
+    required this.variety,
+    this.latitude,
+    this.longitude,
   });
 }
 
@@ -153,6 +177,9 @@ List<PaddyField> sampleFields = [
         confidence: 89.7,
       ),
     ],
+    variety: 'MR219',
+    latitude: 6.1184,
+    longitude: 100.3685,
   ),
   PaddyField(
     id: '2',
@@ -172,5 +199,8 @@ List<PaddyField> sampleFields = [
       'Planted MR263 variety',
     ],
     scanHistory: [],
+    variety: 'MR263',
+    latitude: 6.1100,
+    longitude: 100.3600,
   ),
 ];

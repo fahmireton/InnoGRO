@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/field.dart';
+import '../widgets/rice_plant.dart';
+import 'field_map_screen.dart';
 
 class FieldDetailScreen extends StatefulWidget {
   final PaddyField field;
@@ -11,6 +13,7 @@ class FieldDetailScreen extends StatefulWidget {
 
 class _FieldDetailScreenState extends State<FieldDetailScreen> {
   late PaddyField f;
+  late GrowthStage _viewedStage;
   final _noteCtrl = TextEditingController();
   final List<String> _notes = [];
 
@@ -18,6 +21,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
   void initState() {
     super.initState();
     f = widget.field;
+    _viewedStage = f.stage;
   }
 
   @override
@@ -31,19 +35,16 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: ctx.card,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text('Delete Field',
-            style: TextStyle(
-                fontWeight: FontWeight.w800, color: AppColors.red)),
+            style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.red)),
         content: Text(
             'Are you sure you want to remove "${f.name}"? This action cannot be undone.',
             style: TextStyle(fontSize: 13, color: ctx.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: TextStyle(color: ctx.textSecondary)),
+            child: Text('Cancel', style: TextStyle(color: ctx.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -53,8 +54,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.red,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text('Delete'),
           ),
@@ -68,19 +68,16 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: ctx.card,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text('Apply Treatment',
-            style: TextStyle(
-                fontWeight: FontWeight.w800, color: ctx.textPrimary)),
+            style: TextStyle(fontWeight: FontWeight.w800, color: ctx.textPrimary)),
         content: Text(
             'Mark a treatment as applied to "${f.name}"? This will be logged in the field\'s activity history.',
             style: TextStyle(fontSize: 13, color: ctx.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: TextStyle(color: ctx.textSecondary)),
+            child: Text('Cancel', style: TextStyle(color: ctx.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -92,16 +89,14 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                 SnackBar(
                   content: const Text('Treatment logged successfully'),
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text('Confirm'),
           ),
@@ -113,15 +108,13 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final days = DateTime.now().difference(f.plantedDate).inDays;
-    final stages = GrowthStage.values;
-    final currentIdx = f.stage.index;
+    final progressPct = (days / 110).clamp(0.0, 1.0);
 
     return Scaffold(
       backgroundColor: context.bg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Sticky header
             SliverAppBar(
               pinned: true,
               backgroundColor: context.bg,
@@ -155,66 +148,45 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                 ),
               ],
             ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Variety subtitle
+                    Text('Paddy (${f.variety})',
+                        style: TextStyle(fontSize: 13, color: context.textSecondary)),
+                    const SizedBox(height: 14),
 
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // Location row
-                  Row(children: [
-                    Icon(Icons.location_on_outlined,
-                        size: 14, color: context.textSecondary),
-                    const SizedBox(width: 4),
-                    Expanded(
-                        child: Text(f.location,
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: context.textSecondary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis)),
-                  ]),
-                  const SizedBox(height: 16),
+                    // Stats row
+                    _statsRow(context, days),
+                    const SizedBox(height: 12),
 
-                  // Stat boxes
-                  _sectionLabel(context, 'Details'),
-                  const SizedBox(height: 10),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    childAspectRatio: 2.2,
-                    children: [
-                      _statBox(context, '${f.areaMorgen.toStringAsFixed(1)} ac',
-                          'Size', context.textPrimary),
-                      _statBox(context, '${days}d', 'Days in field',
-                          context.textPrimary),
-                      _statBox(context, f.healthStatus.label, 'Health',
-                          f.healthStatus.color),
-                      _statBox(context, '${f.waterLevel}%', 'Water level',
-                          AppColors.info),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+                    // Location + map button
+                    _locationRow(context),
+                    const SizedBox(height: 22),
 
-                  // Growth tracking
-                  _sectionLabel(context, 'Growth stage'),
-                  const SizedBox(height: 10),
-                  _growthCard(context, stages, currentIdx, days),
-                  const SizedBox(height: 24),
+                    // Growth tracking section
+                    _sectionHeader(context, 'GROWTH TRACKING'),
+                    const SizedBox(height: 10),
+                    _growthTimelineCard(context),
+                    const SizedBox(height: 12),
+                    _stageDetailCard(context, days, progressPct),
+                    const SizedBox(height: 24),
 
-                  // Disease history
-                  _sectionLabel(context, 'Disease history'),
-                  const SizedBox(height: 10),
-                  _diseaseCard(context),
-                  const SizedBox(height: 24),
+                    // Disease history
+                    _sectionHeader(context, 'DISEASE HISTORY'),
+                    const SizedBox(height: 10),
+                    _diseaseCard(context),
+                    const SizedBox(height: 24),
 
-                  // Notes
-                  _sectionLabel(context, 'Notes'),
-                  const SizedBox(height: 10),
-                  _notesCard(context),
-                ]),
+                    // Notes
+                    _sectionHeader(context, 'NOTES'),
+                    const SizedBox(height: 10),
+                    _notesCard(context),
+                  ],
+                ),
               ),
             ),
           ],
@@ -223,135 +195,270 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     );
   }
 
-  Widget _statBox(
-      BuildContext context, String value, String label, Color valueColor) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.secondary.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child:
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label,
-            style:
-                TextStyle(fontSize: 11, color: context.textSecondary)),
-        const SizedBox(height: 4),
-        Text(value,
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: valueColor,
-                letterSpacing: -0.3)),
-      ]),
-    );
-  }
+  Widget _sectionHeader(BuildContext context, String t) => Text(t,
+      style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: context.textSecondary,
+          letterSpacing: 1.2));
 
-  Widget _growthCard(BuildContext context, List<GrowthStage> stages,
-      int currentIdx, int days) {
+  Widget _statsRow(BuildContext context, int days) => Row(children: [
+        _statCard(context, '${f.areaMorgen.toStringAsFixed(1)} Ac', 'SIZE', context.textPrimary),
+        const SizedBox(width: 10),
+        _statCard(context, '$days', 'DAYS', context.textPrimary),
+        const SizedBox(width: 10),
+        _statCard(context, f.healthStatus.label, 'HEALTH', f.healthStatus.color),
+      ]);
+
+  Widget _statCard(BuildContext context, String value, String label, Color valueColor) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            color: context.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.border.withValues(alpha: 0.4)),
+            boxShadow: iosShadow,
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            Text(value,
+                style: TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.w800, color: valueColor),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 3),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 9,
+                    letterSpacing: 0.8,
+                    color: context.textSecondary,
+                    fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      );
+
+  Widget _locationRow(BuildContext context) => Row(children: [
+        Icon(Icons.location_on_outlined, size: 14, color: context.textSecondary),
+        const SizedBox(width: 4),
+        Expanded(
+            child: Text(f.location,
+                style: TextStyle(fontSize: 12, color: context.textSecondary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis)),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => Navigator.push(
+              context, MaterialPageRoute(builder: (_) => FieldMapScreen(field: f))),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+                color: AppColors.accentLight,
+                borderRadius: BorderRadius.circular(10)),
+            child: Row(children: [
+              const Icon(Icons.map_rounded, size: 13, color: AppColors.primary),
+              const SizedBox(width: 4),
+              const Text('View Map',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary)),
+            ]),
+          ),
+        ),
+      ]);
+
+  Widget _growthTimelineCard(BuildContext context) {
+    final stages = GrowthStage.values;
+    final currentIdx = f.stage.index;
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.card,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: context.border.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 2,
-              offset: const Offset(0, 1)),
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 24,
-              offset: const Offset(0, 8)),
-        ],
+        boxShadow: iosShadow,
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Scrollable stage pills
-        SingleChildScrollView(
+      child: SizedBox(
+        height: 152,
+        child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: stages.asMap().entries.map((e) {
               final i = e.key;
               final s = e.value;
-              final active = i <= currentIdx;
-              return Padding(
-                padding: EdgeInsets.only(
-                    right: i < stages.length - 1 ? 6 : 0),
-                child: GestureDetector(
-                  onTap: () => setState(() {
-                    f.stage = s;
-                    f.activityLog.insert(0, 'Stage updated to ${s.label}');
-                  }),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: active
-                          ? AppColors.primary
-                          : context.secondary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(s.label,
+              final isViewed = s == _viewedStage;
+              final isPast = i <= currentIdx;
+              return GestureDetector(
+                onTap: () => setState(() => _viewedStage = s),
+                child: SizedBox(
+                  width: 76,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: CustomPaint(
+                            size: Size.infinite,
+                            painter: RicePlantPainter(i, active: isPast),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      // Dot row
+                      SizedBox(
+                        height: 22,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (i > 0)
+                              Positioned(
+                                left: 0,
+                                top: 10,
+                                child: Container(
+                                  width: 38,
+                                  height: 2,
+                                  color: i <= currentIdx
+                                      ? AppColors.primary
+                                      : context.border,
+                                ),
+                              ),
+                            if (i < stages.length - 1)
+                              Positioned(
+                                right: 0,
+                                top: 10,
+                                child: Container(
+                                  width: 38,
+                                  height: 2,
+                                  color: i < currentIdx
+                                      ? AppColors.primary
+                                      : context.border,
+                                ),
+                              ),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: isViewed ? 15 : 10,
+                              height: isViewed ? 15 : 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isPast
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: AppColors.primary,
+                                  width:
+                                      isViewed ? 2.5 : (isPast ? 0 : 1.5),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        s.shortLabel,
                         style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: active
-                                ? Colors.white
-                                : context.textSecondary)),
+                          fontSize: 9,
+                          fontWeight:
+                              isViewed ? FontWeight.w700 : FontWeight.w500,
+                          color: isViewed
+                              ? AppColors.primary
+                              : context.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                      ),
+                    ],
                   ),
                 ),
               );
             }).toList(),
           ),
         ),
-        const SizedBox(height: 14),
+      ),
+    );
+  }
 
-        // Progress bar
+  Widget _stageDetailCard(BuildContext context, int days, double progressPct) {
+    final s = _viewedStage;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
+        boxShadow: iosShadow,
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(s.shortLabel,
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: context.textPrimary)),
+              const SizedBox(height: 6),
+              Text(s.description,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: context.textSecondary,
+                      height: 1.4)),
+              const SizedBox(height: 12),
+              Text('Estimated days',
+                  style: TextStyle(fontSize: 11, color: context.textSecondary)),
+              Text(s.dayRange,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary)),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 80,
+            height: 110,
+            child: CustomPaint(painter: RicePlantPainter(s.index, active: true)),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.accentLight.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Tips',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+            const SizedBox(height: 4),
+            Text(s.note,
+                style: TextStyle(
+                    fontSize: 12, color: context.textSecondary, height: 1.5)),
+          ]),
+        ),
+        const SizedBox(height: 14),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('Day 0',
+          Text('Progress',
+              style: TextStyle(fontSize: 12, color: context.textSecondary)),
+          Text('${(progressPct * 100).round()}%',
               style: TextStyle(
-                  fontSize: 11, color: context.textSecondary)),
-          Text('${days}d / ~110d',
-              style: TextStyle(
-                  fontSize: 11, color: context.textSecondary)),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary)),
         ]),
         const SizedBox(height: 6),
         ClipRRect(
           borderRadius: BorderRadius.circular(6),
           child: LinearProgressIndicator(
-            value: (days / 110).clamp(0.0, 1.0),
+            value: progressPct,
             backgroundColor: context.secondary,
-            valueColor:
-                const AlwaysStoppedAnimation(AppColors.primary),
+            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
             minHeight: 8,
           ),
-        ),
-        const SizedBox(height: 14),
-
-        // Current stage tip
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.accentLight.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-            Text('${f.stage.emoji}  ${f.stage.label}  ·  ${f.stage.dayRange}',
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary)),
-            const SizedBox(height: 4),
-            Text(f.stage.note,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: context.textSecondary,
-                    height: 1.5)),
-          ]),
         ),
       ]),
     );
@@ -377,12 +484,11 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
       ),
       child: f.scanHistory.isEmpty
           ? Column(children: [
-              Icon(Icons.grass_rounded,
-                  size: 36, color: context.textSecondary),
+              Icon(Icons.grass_rounded, size: 36, color: context.textSecondary),
               const SizedBox(height: 8),
               Text('No disease history.',
-                  style: TextStyle(
-                      fontSize: 13, color: context.textSecondary)),
+                  style:
+                      TextStyle(fontSize: 13, color: context.textSecondary)),
               const SizedBox(height: 10),
               TextButton(
                 onPressed: _applyTreatment,
@@ -419,17 +525,17 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                      Text(s.diseaseName,
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                              color: context.textPrimary)),
-                      Text(
-                          '${s.date.day}/${s.date.month}/${s.date.year} · ${s.confidence.toStringAsFixed(0)}% confidence',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: context.textSecondary)),
-                    ])),
+                          Text(s.diseaseName,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  color: context.textPrimary)),
+                          Text(
+                              '${s.date.day}/${s.date.month}/${s.date.year} · ${s.confidence.toStringAsFixed(0)}% confidence',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.textSecondary)),
+                        ])),
                     GestureDetector(
                       onTap: _applyTreatment,
                       child: Container(
@@ -486,8 +592,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               controller: _noteCtrl,
               decoration: InputDecoration(
                 hintText: 'Add observation...',
-                hintStyle: TextStyle(
-                    color: context.textSecondary, fontSize: 13),
+                hintStyle: TextStyle(color: context.textSecondary, fontSize: 13),
                 filled: true,
                 fillColor: context.secondary,
                 border: OutlineInputBorder(
@@ -496,8 +601,8 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                 enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               ),
             ),
           ),
@@ -512,8 +617,8 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               }
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(16),
@@ -539,30 +644,22 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   Text(n,
-                      style: TextStyle(
-                          fontSize: 13, color: context.textPrimary)),
+                      style:
+                          TextStyle(fontSize: 13, color: context.textPrimary)),
                   const SizedBox(height: 4),
                   Text(
                     '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                    style: TextStyle(
-                        fontSize: 11, color: context.textSecondary),
+                    style:
+                        TextStyle(fontSize: 11, color: context.textSecondary),
                   ),
                 ]),
               )),
         ] else ...[
           const SizedBox(height: 8),
           Text('No notes yet.',
-              style: TextStyle(
-                  fontSize: 13, color: context.textSecondary)),
+              style: TextStyle(fontSize: 13, color: context.textSecondary)),
         ],
       ]),
     );
   }
-
-  Widget _sectionLabel(BuildContext context, String t) => Text(t,
-      style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: context.textSecondary,
-          letterSpacing: 0.3));
 }

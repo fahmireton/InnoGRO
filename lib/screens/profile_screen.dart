@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../app_theme_notifier.dart';
 import '../theme.dart';
+import '../services/auth_service.dart';
+import '../models/field.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -9,22 +13,48 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _nameCtrl = TextEditingController(text: 'Farmer');
-  final _farmCtrl = TextEditingController(text: 'My Paddy Farm');
-
-  String _region = 'Selangor';
+  String _region = 'Malaysia';
   String _units = 'Metric';
   String _language = 'English';
+  bool _signingOut = false;
+
+  User? get _user => FirebaseAuth.instance.currentUser;
+  String get _displayName => _user?.displayName ?? 'Farmer';
+  String get _email => _user?.email ?? '';
+  String get _initials {
+    final name = _displayName;
+    if (name.isEmpty) return 'F';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    return name[0].toUpperCase();
+  }
 
   @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _farmCtrl.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final data = await AuthService.getUserData();
+    if (mounted && data != null) {
+      setState(() => _region = data['region'] ?? 'Malaysia');
+    }
+  }
+
+  Future<void> _updateRegion(String newRegion) async {
+    setState(() => _region = newRegion);
+    final uid = _user?.uid;
+    if (uid != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .update({'region': newRegion});
+    }
   }
 
   void _showRegionSheet() {
-    final regions = ['Selangor', 'Kedah', 'Perak', 'Johor', 'Sabah', 'Sarawak'];
+    final regions = ['Selangor', 'Kedah', 'Perak', 'Johor', 'Sabah', 'Sarawak', 'Malaysia'];
     showModalBottomSheet(
       context: context,
       backgroundColor: context.card,
@@ -58,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: AppColors.primary, size: 20)
                     : null,
                 onTap: () {
-                  setState(() => _region = r);
+                  _updateRegion(r);
                   Navigator.pop(ctx);
                 },
               )),
@@ -364,6 +394,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ]);
   }
 
+  Future<void> _signOut() async {
+    setState(() => _signingOut = true);
+    try {
+      await AuthService.signOut();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Sign out failed: $e'),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _signingOut = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -384,7 +432,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     TextStyle(fontSize: 14, color: context.textSecondary)),
             const SizedBox(height: 20),
 
-            // Avatar + editable name card
+            // Avatar + user info card
             _card(context,
                 child: Row(children: [
                   // Avatar gradient circle
@@ -404,9 +452,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        _nameCtrl.text.isNotEmpty
-                            ? _nameCtrl.text[0].toUpperCase()
-                            : 'F',
+                        _initials,
                         style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
@@ -419,35 +465,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                        TextField(
-                          controller: _nameCtrl,
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: context.textPrimary),
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            filled: false,
-                          ),
-                          onChanged: (_) => setState(() {}),
-                        ),
-                        TextField(
-                          controller: _farmCtrl,
-                          style: TextStyle(
-                              fontSize: 13, color: context.textSecondary),
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            filled: false,
-                          ),
-                        ),
+                        Text(_displayName,
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: context.textPrimary)),
+                        const SizedBox(height: 2),
+                        Text(_email,
+                            style: TextStyle(
+                                fontSize: 13, color: context.textSecondary)),
+                        const SizedBox(height: 2),
+                        Text('Region: $_region',
+                            style: TextStyle(
+                                fontSize: 12, color: context.textSecondary)),
+                        Text('Fields: ${sampleFields.length}',
+                            style: TextStyle(
+                                fontSize: 12, color: context.textSecondary)),
                       ])),
                 ])),
 
@@ -661,7 +694,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _showClearDataDialog),
                 ])),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+
+            // Sign out button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _signingOut ? null : _signOut,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: AppColors.red),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+                icon: _signingOut
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.red))
+                    : const Icon(Icons.logout_rounded,
+                        color: AppColors.red, size: 20),
+                label: Text(
+                  'Sign Out',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: _signingOut
+                          ? AppColors.red.withValues(alpha: 0.5)
+                          : AppColors.red),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
             Center(
               child: Text(
                   'VisionGRO · v1.0 · Made for smallholder farmers',

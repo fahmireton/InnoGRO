@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../theme.dart';
+import '../services/firestore_service.dart';
+import '../services/auth_service.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -116,17 +122,20 @@ class _FeedTab extends StatefulWidget {
 
 class _FeedTabState extends State<_FeedTab> {
   final _draftCtrl = TextEditingController();
-  final List<_PostData> _posts = [
-    _PostData('Pak Razak', 'Sekinchan, Selangor', '2h',
-        'Caught early sheath blight in plot 3. Trichoderma spray + draining standing water did the trick. Anyone else seeing it after the rain?',
-        24, 8),
-    _PostData('Aishah', 'Kedah', '5h',
-        'Bumper harvest from MR297 this season — 7.2 t/ha! Switched to organic neem oil rotation 3 months in.',
-        67, 19),
-    _PostData('Kumar', 'Perak', '1d',
-        'Brown planthopper warning in Teluk Intan area. Check undersides of leaves daily this week.',
-        41, 12),
-  ];
+  String _userRegion = 'Malaysia';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRegion();
+  }
+
+  Future<void> _loadRegion() async {
+    final data = await AuthService.getUserData();
+    if (mounted && data != null) {
+      setState(() => _userRegion = data['region'] ?? 'Malaysia');
+    }
+  }
 
   @override
   void dispose() {
@@ -134,152 +143,181 @@ class _FeedTabState extends State<_FeedTab> {
     super.dispose();
   }
 
+  String _timeAgo(Timestamp? ts) {
+    if (ts == null) return 'now';
+    final diff = DateTime.now().difference(ts.toDate());
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      children: [
-        // Compose
-        _card(context,
-            child: Row(children: [
-              Expanded(
-                child: TextField(
-                  controller: _draftCtrl,
-                  decoration: InputDecoration(
-                    hintText: 'Share with your region…',
-                    hintStyle: TextStyle(
-                        color: context.textSecondary, fontSize: 13),
-                    filled: true,
-                    fillColor: context.secondary,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none),
-                    enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  if (_draftCtrl.text.trim().isNotEmpty) {
-                    setState(() {
-                      _posts.insert(
-                          0,
-                          _PostData('You', 'Selangor', 'now',
-                              _draftCtrl.text.trim(), 0, 0));
-                      _draftCtrl.clear();
-                    });
-                  }
-                },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.send_rounded,
-                      color: Colors.white, size: 18),
-                ),
-              ),
-            ])),
-        const SizedBox(height: 14),
-        ..._posts.map((p) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _card(context,
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Row(children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                            child: Text(p.name[0],
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 16,
-                                    color: AppColors.primary))),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirestoreService.postsStream(),
+      builder: (context, snap) {
+        final posts = snap.data?.docs ?? [];
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          children: [
+            // Compose
+            _card(context,
+                child: Row(children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _draftCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'Share with your region…',
+                        hintStyle: TextStyle(
+                            color: context.textSecondary, fontSize: 13),
+                        filled: true,
+                        fillColor: context.secondary,
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                            Text(p.name,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () async {
+                      final text = _draftCtrl.text.trim();
+                      if (text.isNotEmpty) {
+                        _draftCtrl.clear();
+                        await FirestoreService.addPost(text, _userRegion);
+                      }
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.send_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+                ])),
+            const SizedBox(height: 14),
+            if (snap.connectionState == ConnectionState.waiting)
+              const Center(child: Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              ))
+            else
+              ...posts.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final name = data['authorName'] as String? ?? 'Farmer';
+                final region = data['region'] as String? ?? '';
+                final content = data['content'] as String? ?? '';
+                final likes = data['likes'] as int? ?? 0;
+                final replies = data['replies'] as int? ?? 0;
+                final ts = data['timestamp'] as Timestamp?;
+                final timeStr = _timeAgo(ts);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _card(context,
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                        Row(children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                                child: Text(name.isNotEmpty ? name[0].toUpperCase() : 'F',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 16,
+                                        color: AppColors.primary))),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                            Text(name,
                                 style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
                                     color: context.textPrimary)),
-                            Text('${p.region} · ${p.time}',
+                            Text('$region · $timeStr',
                                 style: TextStyle(
                                     fontSize: 11,
                                     color: context.textSecondary)),
                           ])),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentLight,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text('Paddy',
-                            style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.accent)),
-                      ),
-                    ]),
-                    const SizedBox(height: 10),
-                    Text(p.content,
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: context.textPrimary,
-                            height: 1.5)),
-                    const SizedBox(height: 10),
-                    Row(children: [
-                      Icon(Icons.favorite_border_rounded,
-                          size: 16, color: context.textSecondary),
-                      const SizedBox(width: 4),
-                      Text('${p.likes}',
-                          style: TextStyle(
-                              fontSize: 12, color: context.textSecondary)),
-                      const SizedBox(width: 16),
-                      Icon(Icons.chat_bubble_outline_rounded,
-                          size: 16, color: context.textSecondary),
-                      const SizedBox(width: 4),
-                      Text('${p.replies}',
-                          style: TextStyle(
-                              fontSize: 12, color: context.textSecondary)),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Feature coming soon'),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentLight,
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                          );
-                        },
-                        child: Text('Reply',
+                            child: const Text('Paddy',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.accent)),
+                          ),
+                        ]),
+                        const SizedBox(height: 10),
+                        Text(content,
                             style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary)),
-                      ),
-                    ]),
-                  ])),
-            )),
-      ],
+                                fontSize: 13,
+                                color: context.textPrimary,
+                                height: 1.5)),
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          GestureDetector(
+                            onTap: () => FirestoreService.likePost(doc.id, likes),
+                            child: Icon(Icons.favorite_border_rounded,
+                                size: 16, color: context.textSecondary),
+                          ),
+                          const SizedBox(width: 4),
+                          Text('$likes',
+                              style: TextStyle(
+                                  fontSize: 12, color: context.textSecondary)),
+                          const SizedBox(width: 16),
+                          Icon(Icons.chat_bubble_outline_rounded,
+                              size: 16, color: context.textSecondary),
+                          const SizedBox(width: 4),
+                          Text('$replies',
+                              style: TextStyle(
+                                  fontSize: 12, color: context.textSecondary)),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Feature coming soon'),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            },
+                            child: Text('Reply',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary)),
+                          ),
+                        ]),
+                      ])),
+                );
+              }),
+          ],
+        );
+      },
     );
   }
 }
@@ -289,44 +327,101 @@ class _FeedTabState extends State<_FeedTab> {
 class _OutbreakTab extends StatelessWidget {
   const _OutbreakTab();
 
+  Color _severityColor(String severity) {
+    switch (severity.toLowerCase()) {
+      case 'high':
+        return AppColors.red;
+      case 'medium':
+        return AppColors.amber;
+      default:
+        return AppColors.accent;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      children: [
-        _card(context,
-            child: Column(children: [
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F4FD),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: CustomPaint(
-                    painter: _MapPainter(),
-                    child: const SizedBox.expand()),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirestoreService.outbreaksStream(),
+      builder: (context, snap) {
+        final docs = snap.data?.docs ?? [];
+        final markers = docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final lat = (data['lat'] as num?)?.toDouble() ?? 4.2105;
+          final lng = (data['lng'] as num?)?.toDouble() ?? 108.9758;
+          final severity = data['severity'] as String? ?? 'Low';
+          final color = _severityColor(severity);
+          return Marker(
+            point: LatLng(lat, lng),
+            width: 28,
+            height: 28,
+            child: Container(
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 6, spreadRadius: 1),
+                ],
               ),
-              const SizedBox(height: 12),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                _legend(AppColors.accent, 'Low', context),
-                const SizedBox(width: 20),
-                _legend(AppColors.amber, 'Medium', context),
-                const SizedBox(width: 20),
-                _legend(AppColors.red, 'High', context),
-              ]),
-            ])),
-        const SizedBox(height: 12),
-        _card(context,
-            child: Column(children: [
-              _riskRow(context, AppColors.red, 'Kedah', 'High risk'),
-              Divider(height: 1, color: context.border),
-              _riskRow(context, AppColors.amber, 'Selangor', 'Medium risk'),
-              Divider(height: 1, color: context.border),
-              _riskRow(context, AppColors.accent, 'Johor', 'Low risk'),
-              Divider(height: 1, color: context.border),
-              _riskRow(context, AppColors.amber, 'Pahang', 'Medium risk'),
-            ])),
-      ],
+            ),
+          );
+        }).toList();
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          children: [
+            _card(context,
+                child: Column(children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
+                      height: 260,
+                      child: FlutterMap(
+                        options: const MapOptions(
+                          initialCenter: LatLng(4.2105, 108.9758),
+                          initialZoom: 6,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.ukm.innogro',
+                          ),
+                          MarkerLayer(markers: markers),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    _legend(AppColors.accent, 'Low', context),
+                    const SizedBox(width: 20),
+                    _legend(AppColors.amber, 'Medium', context),
+                    const SizedBox(width: 20),
+                    _legend(AppColors.red, 'High', context),
+                  ]),
+                ])),
+            const SizedBox(height: 12),
+            if (snap.connectionState == ConnectionState.waiting)
+              const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+            else
+              _card(context,
+                  child: Column(children: [
+                    ...docs.asMap().entries.map((entry) {
+                      final data = entry.value.data() as Map<String, dynamic>;
+                      final state = data['state'] as String? ?? '';
+                      final severity = data['severity'] as String? ?? 'Low';
+                      final disease = data['disease'] as String? ?? '';
+                      final color = _severityColor(severity);
+                      final isLast = entry.key == docs.length - 1;
+                      return Column(children: [
+                        _riskRow(context, color, state, disease, severity),
+                        if (!isLast) Divider(height: 1, color: context.border),
+                      ]);
+                    }),
+                  ])),
+          ],
+        );
+      },
     );
   }
 
@@ -341,8 +436,7 @@ class _OutbreakTab extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: context.textSecondary)),
       ]);
 
-  Widget _riskRow(
-          BuildContext context, Color color, String region, String risk) =>
+  Widget _riskRow(BuildContext context, Color color, String region, String disease, String severity) =>
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(children: [
@@ -356,54 +450,22 @@ class _OutbreakTab extends StatelessWidget {
               size: 14, color: context.textSecondary),
           const SizedBox(width: 4),
           Expanded(
-              child: Text(region,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: context.textPrimary))),
-          Text(risk,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(region,
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: context.textPrimary)),
+            Text(disease,
+                style: TextStyle(fontSize: 11, color: context.textSecondary)),
+          ])),
+          Text('$severity risk',
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: color)),
         ]),
       );
-}
-
-class _MapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFB7DEB8)
-      ..style = PaintingStyle.fill;
-    final cx = size.width / 2, cy = size.height / 2;
-    final path = Path()
-      ..moveTo(cx - 60, cy - 70)
-      ..cubicTo(cx - 20, cy - 100, cx + 60, cy - 80, cx + 80, cy - 20)
-      ..cubicTo(cx + 90, cy + 30, cx + 40, cy + 80, cx, cy + 70)
-      ..cubicTo(cx - 50, cy + 60, cx - 90, cy + 10, cx - 60, cy - 70)
-      ..close();
-    canvas.drawPath(path, paint);
-    canvas.drawPath(
-        path,
-        Paint()
-          ..color = AppColors.primary
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5);
-    void dot(double x, double y, Color c) {
-      canvas.drawCircle(
-          Offset(x, y), 12, Paint()..color = c.withValues(alpha: 0.25));
-      canvas.drawCircle(Offset(x, y), 6, Paint()..color = c);
-    }
-
-    dot(cx - 30, cy - 30, AppColors.red);
-    dot(cx + 10, cy + 10, AppColors.amber);
-    dot(cx + 50, cy - 10, AppColors.amber);
-    dot(cx - 10, cy + 40, AppColors.accent);
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
 }
 
 // ── Experts tab ───────────────────────────────────────────────────────────────
@@ -413,120 +475,154 @@ class _ExpertsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      children: [
-        _card(context,
-            child: Column(children: [
-              Row(children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: const BoxDecoration(
-                      color: AppColors.primary, shape: BoxShape.circle),
-                  child: const Icon(Icons.person_rounded,
-                      color: Colors.white, size: 26),
-                ),
-                const SizedBox(width: 14),
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Dr. Lim Wei Han',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          color: context.textPrimary)),
-                  Text('MARDI · Plant Pathology · 18 yrs',
-                      style: TextStyle(
-                          fontSize: 12, color: context.textSecondary)),
-                ]),
-              ]),
-              const SizedBox(height: 10),
-              Row(children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Feature coming soon'),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: context.secondary,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Center(
-                          child: Text('View profile',
-                              style: TextStyle(
-                                  color: context.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14))),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _showBookingSheet(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: const Center(
-                          child: Text('Book consultation',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14))),
-                    ),
-                  ),
-                ),
-              ]),
-            ])),
-        const SizedBox(height: 20),
-        Text('EXTENSION OFFICES',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: context.textSecondary,
-                letterSpacing: 1.2)),
-        const SizedBox(height: 10),
-        _card(context,
-            child: Column(children: [
-              _officeRow(context, 'DOA Selangor', '03-5510 1234'),
-              Divider(height: 1, color: context.border),
-              _officeRow(context, 'MARDI Serdang', '03-8943 7111'),
-              Divider(height: 1, color: context.border),
-              _officeRow(context, 'DOA Kedah', '04-733 1234'),
-            ])),
-        const SizedBox(height: 20),
-        Text('SUBSIDIES & GRANTS',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: context.textSecondary,
-                letterSpacing: 1.2)),
-        const SizedBox(height: 10),
-        _card(context,
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-              _subsidyRow(context, 'Padi Subsidy Scheme (SSP)',
-                  'RM 240/tonne for registered farmers.'),
-              const SizedBox(height: 12),
-              _subsidyRow(context, 'Fertilizer Subsidy (SBPN)',
-                  'Free urea + NPK up to 2.4 ha.'),
-              const SizedBox(height: 12),
-              _subsidyRow(context, 'Crop Insurance (TPP)',
-                  'Covers flood, pest, drought losses.'),
-            ])),
-      ],
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirestoreService.expertsStream(),
+      builder: (context, snap) {
+        final docs = snap.data?.docs ?? [];
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          children: [
+            if (snap.connectionState == ConnectionState.waiting)
+              const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+            else
+              ...docs.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final name = data['name'] as String? ?? 'Expert';
+                final institution = data['institution'] as String? ?? '';
+                final specialization = data['specialization'] as String? ?? '';
+                final experience = data['experience'] as int? ?? 0;
+                final available = data['available'] as bool? ?? false;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _card(context,
+                      child: Column(children: [
+                        Row(children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: const BoxDecoration(
+                                color: AppColors.primary, shape: BoxShape.circle),
+                            child: const Icon(Icons.person_rounded,
+                                color: Colors.white, size: 26),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(name,
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                    color: context.textPrimary)),
+                            Text('$institution · $specialization · $experience yrs',
+                                style: TextStyle(
+                                    fontSize: 12, color: context.textSecondary)),
+                          ])),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: available ? AppColors.accentLight : AppColors.redLight,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(available ? 'Available' : 'Busy',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: available ? AppColors.accent : AppColors.red)),
+                          ),
+                        ]),
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text('Feature coming soon'),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: context.secondary,
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Center(
+                                    child: Text('View profile',
+                                        style: TextStyle(
+                                            color: context.textPrimary,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14))),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: available
+                                  ? () => _showBookingSheet(context, name, doc.id)
+                                  : null,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: available ? AppColors.primary : AppColors.primary.withValues(alpha: 0.4),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: const Center(
+                                    child: Text('Book consultation',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14))),
+                              ),
+                            ),
+                          ),
+                        ]),
+                      ])),
+                );
+              }),
+            const SizedBox(height: 8),
+            Text('EXTENSION OFFICES',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: context.textSecondary,
+                    letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            _card(context,
+                child: Column(children: [
+                  _officeRow(context, 'DOA Selangor', '03-5510 1234'),
+                  Divider(height: 1, color: context.border),
+                  _officeRow(context, 'MARDI Serdang', '03-8943 7111'),
+                  Divider(height: 1, color: context.border),
+                  _officeRow(context, 'DOA Kedah', '04-733 1234'),
+                ])),
+            const SizedBox(height: 20),
+            Text('SUBSIDIES & GRANTS',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: context.textSecondary,
+                    letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            _card(context,
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  _subsidyRow(context, 'Padi Subsidy Scheme (SSP)',
+                      'RM 240/tonne for registered farmers.'),
+                  const SizedBox(height: 12),
+                  _subsidyRow(context, 'Fertilizer Subsidy (SBPN)',
+                      'Free urea + NPK up to 2.4 ha.'),
+                  const SizedBox(height: 12),
+                  _subsidyRow(context, 'Crop Insurance (TPP)',
+                      'Covers flood, pest, drought losses.'),
+                ])),
+          ],
+        );
+      },
     );
   }
 
@@ -572,7 +668,7 @@ class _ExpertsTab extends StatelessWidget {
                 height: 1.4)),
       ]);
 
-  void _showBookingSheet(BuildContext context) {
+  void _showBookingSheet(BuildContext context, String expertName, String expertId) {
     String? selectedSlot;
     showModalBottomSheet(
       context: context,
@@ -617,17 +713,30 @@ class _ExpertsTab extends StatelessWidget {
                 childAspectRatio: 2.5,
                 children: slots
                     .map((s) => GestureDetector(
-                          onTap: () {
+                          onTap: () async {
                             setS(() => selectedSlot = s);
                             final messenger = ScaffoldMessenger.of(context);
                             final nav = Navigator.of(sheetContext);
+                            final uid = FirebaseAuth.instance.currentUser?.uid;
+                            if (uid != null) {
+                              await FirebaseFirestore.instance
+                                  .collection('bookings')
+                                  .add({
+                                'userId': uid,
+                                'expertId': expertId,
+                                'expertName': expertName,
+                                'slot': s,
+                                'status': 'pending',
+                                'createdAt': FieldValue.serverTimestamp(),
+                              });
+                            }
                             Future.delayed(
                                 const Duration(milliseconds: 200), () {
                               nav.pop();
                               messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                      'Consultation booked for $s. Check your SMS for confirmation.'),
+                                      'Booking request sent for $s. Check your SMS for confirmation.'),
                                   behavior: SnackBarBehavior.floating,
                                   shape: RoundedRectangleBorder(
                                       borderRadius:
@@ -869,10 +978,3 @@ Widget _card(BuildContext context, {required Widget child}) => Container(
       ),
       child: child,
     );
-
-class _PostData {
-  final String name, region, time, content;
-  final int likes, replies;
-  _PostData(this.name, this.region, this.time, this.content, this.likes,
-      this.replies);
-}

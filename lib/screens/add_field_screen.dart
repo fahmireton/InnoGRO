@@ -39,6 +39,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
       plantedDate: DateTime.now(),
       activityLog: ['🌱 Field added to VisionGRO'],
       scanHistory: [],
+      variety: 'MR219',
     ));
   }
 
