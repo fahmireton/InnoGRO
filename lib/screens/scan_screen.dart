@@ -65,18 +65,18 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
         children: [
-          const Text('AI Scan',
+          Text('AI Scan',
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary, letterSpacing: -0.5)),
+              color: context.textPrimary, letterSpacing: -0.5)),
           const SizedBox(height: 2),
-          const Text('Diagnose plant disease in seconds',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+          Text('Diagnose plant disease in seconds',
+            style: TextStyle(fontSize: 14, color: context.textSecondary)),
           const SizedBox(height: 20),
           _uploadCard(context),
           const SizedBox(height: 24),
-          const Text('HEALTHY VS DISEASED',
+          Text('HEALTHY VS DISEASED',
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary, letterSpacing: 1.2)),
+              color: context.textSecondary, letterSpacing: 1.2)),
           const SizedBox(height: 12),
           _comparisonCard(context),
         ],
@@ -119,7 +119,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                             child: Icon(Icons.image_rounded, size: 32, color: AppColors.accent),
                           )
                         : Icon(Icons.image_outlined, size: 32,
-                            color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                            color: context.textSecondary.withValues(alpha: 0.5)),
                     ),
                   ),
                 ),
@@ -127,8 +127,8 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             )),
           ),
           const SizedBox(height: 12),
-          const Text('Add up to 3 angles for best accuracy.',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text('Add up to 3 angles for best accuracy.',
+            style: TextStyle(fontSize: 13, color: context.textSecondary)),
           const SizedBox(height: 14),
           // Camera / Upload buttons
           Row(children: [
@@ -159,10 +159,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     color: context.secondary,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(Icons.image_outlined, size: 18, color: AppColors.textPrimary),
-                    SizedBox(width: 6),
-                    Text('Upload', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.image_outlined, size: 18, color: context.textPrimary),
+                    const SizedBox(width: 6),
+                    Text('Upload', style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600)),
                   ]),
                 ),
               ),
@@ -289,10 +289,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             child: Slider(value: _sliderValue, onChanged: (v) => setState(() => _sliderValue = v)),
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.only(bottom: 6),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
           child: Center(child: Text('Drag to compare visual cues',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary))),
+            style: TextStyle(fontSize: 12, color: context.textSecondary))),
         ),
         // Factual info section
         Divider(height: 1, color: context.border),
@@ -317,7 +317,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 padding: const EdgeInsets.only(bottom: 5),
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('• ', style: TextStyle(fontSize: 12, color: AppColors.accent)),
-                  Expanded(child: Text(s, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3))),
+                  Expanded(child: Builder(builder: (ctx) => Text(s, style: TextStyle(fontSize: 12, color: ctx.textSecondary, height: 1.3)))),
                 ]),
               )),
             ])),
@@ -342,7 +342,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 padding: const EdgeInsets.only(bottom: 5),
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('• ', style: TextStyle(fontSize: 12, color: AppColors.red)),
-                  Expanded(child: Text(s, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3))),
+                  Expanded(child: Builder(builder: (ctx) => Text(s, style: TextStyle(fontSize: 12, color: ctx.textSecondary, height: 1.3)))),
                 ]),
               )),
             ])),

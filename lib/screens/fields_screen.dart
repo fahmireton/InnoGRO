@@ -32,19 +32,30 @@ class _FieldsScreenState extends State<FieldsScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 child: Row(children: [
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('My Fields',
-                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary, letterSpacing: -0.5)),
-                    Text('${sampleFields.length} field${sampleFields.length == 1 ? '' : 's'}',
-                      style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+                  Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                    Text('My Fields',
+                        style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: context.textPrimary,
+                            letterSpacing: -0.5)),
+                    Text(
+                        '${sampleFields.length} field${sampleFields.length == 1 ? '' : 's'}',
+                        style: TextStyle(
+                            fontSize: 14, color: context.textSecondary)),
                   ])),
                   GestureDetector(
                     onTap: _addField,
                     child: Container(
-                      width: 40, height: 40,
-                      decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                          color: AppColors.primary, shape: BoxShape.circle),
+                      child: const Icon(Icons.add_rounded,
+                          color: Colors.white, size: 22),
                     ),
                   ),
                 ]),
@@ -65,7 +76,8 @@ class _FieldsScreenState extends State<FieldsScreen> {
                       child: _FieldCard(
                         field: f,
                         onTap: () async {
-                          await Navigator.push(context, slideRoute(FieldDetailScreen(field: f)));
+                          await Navigator.push(
+                              context, slideRoute(FieldDetailScreen(field: f)));
                           setState(() {});
                         },
                       ),
@@ -85,10 +97,12 @@ class _FieldsScreenState extends State<FieldsScreen> {
                           strokeAlign: BorderSide.strokeAlignCenter,
                         ),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text('+ Add new field',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary)),
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: context.textSecondary)),
                       ),
                     ),
                   ),
@@ -130,10 +144,17 @@ class _FieldCardState extends State<_FieldCard> {
           decoration: BoxDecoration(
             color: context.card,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: context.border.withValues(alpha: 0.4)),
+            border:
+                Border.all(color: context.border.withValues(alpha: 0.4)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-              BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1)),
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8)),
             ],
           ),
           clipBehavior: Clip.hardEdge,
@@ -154,23 +175,32 @@ class _FieldCardState extends State<_FieldCard> {
               child: Stack(children: [
                 // Health badge
                 Positioned(
-                  bottom: 12, left: 16,
+                  bottom: 12,
+                  left: 16,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: f.healthStatus.color.withValues(alpha: 0.2),
+                      color:
+                          f.healthStatus.color.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: f.healthStatus.color.withValues(alpha: 0.4)),
+                      border: Border.all(
+                          color: f.healthStatus.color
+                              .withValues(alpha: 0.4)),
                     ),
                     child: Text(f.healthStatus.label,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                        color: f.healthStatus.color)),
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: f.healthStatus.color)),
                   ),
                 ),
                 // Emoji
                 Positioned(
-                  top: 12, right: 16,
-                  child: Text(f.stage.emoji, style: const TextStyle(fontSize: 28)),
+                  top: 12,
+                  right: 16,
+                  child:
+                      Text(f.stage.emoji, style: const TextStyle(fontSize: 28)),
                 ),
               ]),
             ),
@@ -178,26 +208,39 @@ class _FieldCardState extends State<_FieldCard> {
             // Content
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 Text(f.name,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16,
-                    color: AppColors.textPrimary),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: context.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
                 Text(f.location,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                    style: TextStyle(
+                        fontSize: 12, color: context.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 8),
                 Row(children: [
                   Text('${f.areaMorgen} ac',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  const Text(' · ', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      style: TextStyle(
+                          fontSize: 12, color: context.textSecondary)),
+                  Text(' · ',
+                      style: TextStyle(
+                          fontSize: 12, color: context.textSecondary)),
                   Text(f.stage.label,
-                    style: TextStyle(fontSize: 12, color: f.healthStatus.color,
-                      fontWeight: FontWeight.w600)),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: f.healthStatus.color,
+                          fontWeight: FontWeight.w600)),
                   const Spacer(),
                   Text('$days days',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      style: TextStyle(
+                          fontSize: 12, color: context.textSecondary)),
                 ]),
               ]),
             ),

@@ -26,6 +26,90 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     super.dispose();
   }
 
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.card,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Delete Field',
+            style: TextStyle(
+                fontWeight: FontWeight.w800, color: AppColors.red)),
+        content: Text(
+            'Are you sure you want to remove "${f.name}"? This action cannot be undone.',
+            style: TextStyle(fontSize: 13, color: ctx.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: TextStyle(color: ctx.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _applyTreatment() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.card,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Apply Treatment',
+            style: TextStyle(
+                fontWeight: FontWeight.w800, color: ctx.textPrimary)),
+        content: Text(
+            'Mark a treatment as applied to "${f.name}"? This will be logged in the field\'s activity history.',
+            style: TextStyle(fontSize: 13, color: ctx.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: TextStyle(color: ctx.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                f.activityLog.insert(0, 'Treatment applied');
+              });
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Treatment logged successfully'),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final days = DateTime.now().difference(f.plantedDate).inDays;
@@ -48,19 +132,25 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                 onPressed: () => Navigator.pop(context),
               ),
               title: Text(f.name,
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18,
-                  color: AppColors.textPrimary)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: context.textPrimary)),
               actions: [
                 Padding(
                   padding: const EdgeInsets.only(right: 16),
-                  child: Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.redLight,
-                      borderRadius: BorderRadius.circular(10),
+                  child: GestureDetector(
+                    onTap: _confirmDelete,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.redLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded,
+                          color: AppColors.red, size: 20),
                     ),
-                    child: const Icon(Icons.delete_outline_rounded,
-                      color: AppColors.red, size: 20),
                   ),
                 ),
               ],
@@ -72,16 +162,21 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                 delegate: SliverChildListDelegate([
                   // Location row
                   Row(children: [
-                    const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                    Icon(Icons.location_on_outlined,
+                        size: 14, color: context.textSecondary),
                     const SizedBox(width: 4),
-                    Expanded(child: Text(f.location,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    Expanded(
+                        child: Text(f.location,
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: context.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
                   ]),
                   const SizedBox(height: 16),
 
                   // Stat boxes
-                  _sectionLabel('Details'),
+                  _sectionLabel(context, 'Details'),
                   const SizedBox(height: 10),
                   GridView.count(
                     crossAxisCount: 2,
@@ -91,28 +186,32 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     childAspectRatio: 2.2,
                     children: [
-                      _statBox(context, '${f.areaMorgen.toStringAsFixed(1)} ac', 'Size', AppColors.textPrimary),
-                      _statBox(context, '${days}d', 'Days in field', AppColors.textPrimary),
-                      _statBox(context, f.healthStatus.label, 'Health', f.healthStatus.color),
-                      _statBox(context, '${f.waterLevel}%', 'Water level', AppColors.info),
+                      _statBox(context, '${f.areaMorgen.toStringAsFixed(1)} ac',
+                          'Size', context.textPrimary),
+                      _statBox(context, '${days}d', 'Days in field',
+                          context.textPrimary),
+                      _statBox(context, f.healthStatus.label, 'Health',
+                          f.healthStatus.color),
+                      _statBox(context, '${f.waterLevel}%', 'Water level',
+                          AppColors.info),
                     ],
                   ),
                   const SizedBox(height: 24),
 
                   // Growth tracking
-                  _sectionLabel('Growth stage'),
+                  _sectionLabel(context, 'Growth stage'),
                   const SizedBox(height: 10),
                   _growthCard(context, stages, currentIdx, days),
                   const SizedBox(height: 24),
 
                   // Disease history
-                  _sectionLabel('Disease history'),
+                  _sectionLabel(context, 'Disease history'),
                   const SizedBox(height: 10),
                   _diseaseCard(context),
                   const SizedBox(height: 24),
 
                   // Notes
-                  _sectionLabel('Notes'),
+                  _sectionLabel(context, 'Notes'),
                   const SizedBox(height: 10),
                   _notesCard(context),
                 ]),
@@ -124,24 +223,32 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     );
   }
 
-  Widget _statBox(BuildContext context, String value, String label, Color valueColor) {
+  Widget _statBox(
+      BuildContext context, String value, String label, Color valueColor) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.secondary.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+      child:
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label,
+            style:
+                TextStyle(fontSize: 11, color: context.textSecondary)),
         const SizedBox(height: 4),
         Text(value,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: valueColor,
-            letterSpacing: -0.3)),
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: valueColor,
+                letterSpacing: -0.3)),
       ]),
     );
   }
 
-  Widget _growthCard(BuildContext context, List<GrowthStage> stages, int currentIdx, int days) {
+  Widget _growthCard(BuildContext context, List<GrowthStage> stages,
+      int currentIdx, int days) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -149,8 +256,14 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: context.border.withValues(alpha: 0.4)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 2,
+              offset: const Offset(0, 1)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 24,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -163,7 +276,8 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               final s = e.value;
               final active = i <= currentIdx;
               return Padding(
-                padding: EdgeInsets.only(right: i < stages.length - 1 ? 6 : 0),
+                padding: EdgeInsets.only(
+                    right: i < stages.length - 1 ? 6 : 0),
                 child: GestureDetector(
                   onTap: () => setState(() {
                     f.stage = s;
@@ -171,15 +285,21 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                   }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: active ? AppColors.primary : context.secondary,
+                      color: active
+                          ? AppColors.primary
+                          : context.secondary,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(s.label,
-                      style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600,
-                        color: active ? Colors.white : AppColors.textSecondary)),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: active
+                                ? Colors.white
+                                : context.textSecondary)),
                   ),
                 ),
               );
@@ -190,9 +310,12 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
 
         // Progress bar
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          const Text('Day 0', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+          Text('Day 0',
+              style: TextStyle(
+                  fontSize: 11, color: context.textSecondary)),
           Text('${days}d / ~110d',
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              style: TextStyle(
+                  fontSize: 11, color: context.textSecondary)),
         ]),
         const SizedBox(height: 6),
         ClipRRect(
@@ -200,7 +323,8 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
           child: LinearProgressIndicator(
             value: (days / 110).clamp(0.0, 1.0),
             backgroundColor: context.secondary,
-            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+            valueColor:
+                const AlwaysStoppedAnimation(AppColors.primary),
             minHeight: 8,
           ),
         ),
@@ -213,13 +337,20 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
             color: AppColors.accentLight.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             Text('${f.stage.emoji}  ${f.stage.label}  ·  ${f.stage.dayRange}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                color: AppColors.primary)),
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
             const SizedBox(height: 4),
             Text(f.stage.note,
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.5)),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: context.textSecondary,
+                    height: 1.5)),
           ]),
         ),
       ]),
@@ -234,62 +365,99 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: context.border.withValues(alpha: 0.4)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 2,
+              offset: const Offset(0, 1)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 24,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: f.scanHistory.isEmpty
-        ? Column(children: [
-            const Icon(Icons.grass_rounded, size: 36, color: AppColors.textSecondary),
-            const SizedBox(height: 8),
-            const Text('No disease history.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () {},
-              child: const Text('Run first scan →',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
-            ),
-          ])
-        : Column(children: f.scanHistory.asMap().entries.map((e) {
-            final s = e.value;
-            final isLast = e.key == f.scanHistory.length - 1;
-            return Column(children: [
-              Row(children: [
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    color: s.severity == 'High' ? AppColors.redLight : AppColors.amberLight,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.bug_report_outlined,
-                    color: s.severity == 'High' ? AppColors.red : AppColors.amber, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.diseaseName,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13,
-                      color: AppColors.textPrimary)),
-                  Text('${s.date.day}/${s.date.month}/${s.date.year} · ${s.confidence.toStringAsFixed(0)}% confidence',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                ])),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: s.severity == 'High' ? AppColors.redLight : AppColors.amberLight,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(s.severity,
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                      color: s.severity == 'High' ? AppColors.red : AppColors.amber)),
-                ),
-              ]),
-              if (!isLast) Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Divider(height: 1, color: context.border),
+          ? Column(children: [
+              Icon(Icons.grass_rounded,
+                  size: 36, color: context.textSecondary),
+              const SizedBox(height: 8),
+              Text('No disease history.',
+                  style: TextStyle(
+                      fontSize: 13, color: context.textSecondary)),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: _applyTreatment,
+                child: const Text('Run first scan →',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary)),
               ),
-            ]);
-          }).toList()),
+            ])
+          : Column(
+              children: f.scanHistory.asMap().entries.map((e) {
+                final s = e.value;
+                final isLast = e.key == f.scanHistory.length - 1;
+                return Column(children: [
+                  Row(children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: s.severity == 'High'
+                            ? AppColors.redLight
+                            : AppColors.amberLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.bug_report_outlined,
+                          color: s.severity == 'High'
+                              ? AppColors.red
+                              : AppColors.amber,
+                          size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                      Text(s.diseaseName,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: context.textPrimary)),
+                      Text(
+                          '${s.date.day}/${s.date.month}/${s.date.year} · ${s.confidence.toStringAsFixed(0)}% confidence',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: context.textSecondary)),
+                    ])),
+                    GestureDetector(
+                      onTap: _applyTreatment,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: s.severity == 'High'
+                              ? AppColors.redLight
+                              : AppColors.amberLight,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(s.severity,
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: s.severity == 'High'
+                                    ? AppColors.red
+                                    : AppColors.amber)),
+                      ),
+                    ),
+                  ]),
+                  if (!isLast)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(height: 1, color: context.border),
+                    ),
+                ]);
+              }).toList()),
     );
   }
 
@@ -301,8 +469,14 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: context.border.withValues(alpha: 0.4)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 2,
+              offset: const Offset(0, 1)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 24,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -312,12 +486,18 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               controller: _noteCtrl,
               decoration: InputDecoration(
                 hintText: 'Add observation...',
-                hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                hintStyle: TextStyle(
+                    color: context.textSecondary, fontSize: 13),
                 filled: true,
                 fillColor: context.secondary,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none),
+                enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
               ),
             ),
           ),
@@ -332,44 +512,57 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               }
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Text('Add',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13)),
             ),
           ),
         ]),
         if (_notes.isNotEmpty) ...[
           const SizedBox(height: 12),
           ..._notes.map((n) => Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.secondary.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(n, style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
-              const SizedBox(height: 4),
-              Text(
-                '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-              ),
-            ]),
-          )),
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: context.secondary.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(n,
+                      style: TextStyle(
+                          fontSize: 13, color: context.textPrimary)),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                    style: TextStyle(
+                        fontSize: 11, color: context.textSecondary),
+                  ),
+                ]),
+              )),
         ] else ...[
           const SizedBox(height: 8),
-          const Text('No notes yet.',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text('No notes yet.',
+              style: TextStyle(
+                  fontSize: 13, color: context.textSecondary)),
         ],
       ]),
     );
   }
 
-  Widget _sectionLabel(String t) => Text(t,
-    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-      color: AppColors.textSecondary, letterSpacing: 0.3));
+  Widget _sectionLabel(BuildContext context, String t) => Text(t,
+      style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.textSecondary,
+          letterSpacing: 0.3));
 }

@@ -74,9 +74,9 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
             const SizedBox(height: 14),
             _input(context, 'Area (morgen)', 'e.g. 2.5', _areaCtrl, isNumber: true),
             const SizedBox(height: 24),
-            const Text('Current Growth Stage',
+            Text('Current Growth Stage',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15,
-                color: AppColors.textPrimary)),
+                color: context.textPrimary)),
             const SizedBox(height: 12),
             ...GrowthStage.values.map((s) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -101,9 +101,9 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                       children: [
                         Text(s.label, style: TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 14,
-                          color: _stage == s ? AppColors.primary : AppColors.textPrimary)),
+                          color: _stage == s ? AppColors.primary : context.textPrimary)),
                         Text(s.dayRange,
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          style: TextStyle(fontSize: 11, color: context.textSecondary)),
                       ],
                     )),
                     if (_stage == s)
@@ -132,8 +132,8 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14,
-          color: AppColors.textPrimary)),
+        Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14,
+          color: context.textPrimary)),
         const SizedBox(height: 8),
         TextFormField(
           controller: ctrl,
@@ -142,7 +142,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
             : TextInputType.text,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.textSecondary),
+            hintStyle: TextStyle(color: context.textSecondary),
           ),
           validator: (v) {
             if (v == null || v.trim().isEmpty) return 'This field is required';

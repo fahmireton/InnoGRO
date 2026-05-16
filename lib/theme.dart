@@ -152,5 +152,14 @@ ThemeData buildDarkTheme() {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       margin: EdgeInsets.zero,
     ),
+    textTheme: const TextTheme(
+      bodyLarge: TextStyle(color: AppColors.darkTextPrimary),
+      bodyMedium: TextStyle(color: AppColors.darkTextPrimary),
+      bodySmall: TextStyle(color: AppColors.darkTextSecondary),
+      titleLarge: TextStyle(color: AppColors.darkTextPrimary),
+      titleMedium: TextStyle(color: AppColors.darkTextPrimary),
+      titleSmall: TextStyle(color: AppColors.darkTextPrimary),
+      labelSmall: TextStyle(color: AppColors.darkTextSecondary),
+    ),
   );
 }
