@@ -22,7 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
@@ -36,7 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
 
             // Avatar + editable name card
-            _card(child: Row(children: [
+            _card(context, child: Row(children: [
               // Avatar gradient circle
               Container(
                 width: 64, height: 64,
@@ -128,20 +128,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 10),
 
             // Preferences card
-            _card(child: Column(children: [
+            _card(context, child: Column(children: [
               // Region
               _prefRow(
                 label: 'Region',
                 right: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary,
+                    color: context.secondary,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Text('Selangor', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                 ),
               ),
-              _divLine(),
+              _divLine(context),
               // Theme toggle
               _prefRow(
                 label: 'Theme',
@@ -174,34 +174,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ]),
                 ),
               ),
-              _divLine(),
+              _divLine(context),
               // Units
               _prefRow(
                 label: 'Units',
                 right: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary,
+                    color: context.secondary,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  child: Row(mainAxisSize: MainAxisSize.min, children: const [
                     Text('Metric', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                     SizedBox(width: 4),
                     Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 16),
                   ]),
                 ),
               ),
-              _divLine(),
+              _divLine(context),
               // Language
               _prefRow(
                 label: 'Language',
                 right: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary,
+                    color: context.secondary,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  child: Row(mainAxisSize: MainAxisSize.min, children: const [
                     Text('English', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                     SizedBox(width: 4),
                     Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 16),
@@ -215,11 +215,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 10),
 
             // Data card
-            _card(child: Column(children: [
+            _card(context, child: Column(children: [
               _dataRow('Export data', AppColors.textPrimary),
-              _divLine(),
+              _divLine(context),
               _dataRow('Privacy controls', AppColors.textPrimary),
-              _divLine(),
+              _divLine(context),
               _dataRow('Clear all data', AppColors.red),
             ])),
 
@@ -234,13 +234,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _card({required Widget child}) {
+  Widget _card(BuildContext context, {required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
           BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
@@ -273,7 +273,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _divLine() => const Divider(height: 1, color: AppColors.border);
+  Widget _divLine(BuildContext context) => Divider(height: 1, color: context.border);
 
   Widget _sectionLabel(String t) => Text(t,
     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,

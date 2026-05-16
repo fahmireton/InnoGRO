@@ -45,7 +45,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
@@ -68,11 +68,11 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            _input('Field Name', 'e.g. Sawah Timur', _nameCtrl),
+            _input(context, 'Field Name', 'e.g. Sawah Timur', _nameCtrl),
             const SizedBox(height: 14),
-            _input('Location', 'e.g. Kedah, Malaysia', _locationCtrl),
+            _input(context, 'Location', 'e.g. Kedah, Malaysia', _locationCtrl),
             const SizedBox(height: 14),
-            _input('Area (morgen)', 'e.g. 2.5', _areaCtrl, isNumber: true),
+            _input(context, 'Area (morgen)', 'e.g. 2.5', _areaCtrl, isNumber: true),
             const SizedBox(height: 24),
             const Text('Current Growth Stage',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15,
@@ -86,10 +86,10 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: _stage == s ? AppColors.accentLight : Colors.white,
+                    color: _stage == s ? AppColors.accentLight : context.card,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: _stage == s ? AppColors.primary : AppColors.border,
+                      color: _stage == s ? AppColors.primary : context.border,
                       width: _stage == s ? 2 : 1,
                     ),
                   ),
@@ -128,7 +128,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
     );
   }
 
-  Widget _input(String label, String hint, TextEditingController ctrl, {bool isNumber = false}) {
+  Widget _input(BuildContext context, String label, String hint, TextEditingController ctrl, {bool isNumber = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

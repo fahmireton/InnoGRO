@@ -52,15 +52,15 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: Stack(children: [
-        _buildContent(),
+        _buildContent(context),
         if (_analyzing) _buildAnalyzing(),
       ]),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
@@ -72,25 +72,25 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           const Text('Diagnose plant disease in seconds',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
           const SizedBox(height: 20),
-          _uploadCard(),
+          _uploadCard(context),
           const SizedBox(height: 24),
           const Text('HEALTHY VS DISEASED',
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
               color: AppColors.textSecondary, letterSpacing: 1.2)),
           const SizedBox(height: 12),
-          _comparisonCard(),
+          _comparisonCard(context),
         ],
       ),
     );
   }
 
-  Widget _uploadCard() {
+  Widget _uploadCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
           BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
@@ -110,7 +110,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                     aspectRatio: 1,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppColors.secondary,
+                        color: context.secondary,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: _images[i] != null
@@ -156,7 +156,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary,
+                    color: context.secondary,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -196,12 +196,12 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _comparisonCard() {
+  Widget _comparisonCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
           BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
@@ -282,7 +282,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               trackHeight: 4,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
               activeTrackColor: AppColors.primary,
-              inactiveTrackColor: AppColors.secondary,
+              inactiveTrackColor: context.secondary,
               thumbColor: AppColors.primary,
               overlayColor: AppColors.primary.withValues(alpha: 0.1),
             ),
@@ -295,7 +295,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             style: TextStyle(fontSize: 12, color: AppColors.textSecondary))),
         ),
         // Factual info section
-        const Divider(height: 1, color: AppColors.border),
+        Divider(height: 1, color: context.border),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -322,7 +322,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               )),
             ])),
             const SizedBox(width: 12),
-            Container(width: 1, height: 120, color: AppColors.border),
+            Container(width: 1, height: 120, color: context.border),
             const SizedBox(width: 12),
             // Diseased column
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -38,7 +38,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -47,8 +47,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                 decoration: BoxDecoration(
-                  color: AppColors.bg,
-                  border: Border(bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+                  color: context.bg,
+                  border: Border(bottom: BorderSide(color: context.border.withValues(alpha: 0.5))),
                 ),
                 child: Row(children: [
                   GestureDetector(
@@ -56,7 +56,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     child: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.secondary, borderRadius: BorderRadius.circular(10)),
+                        color: context.secondary, borderRadius: BorderRadius.circular(10)),
                       child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.primary),
                     ),
                   ),
@@ -79,7 +79,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   _sectionLabel('YOUR REMINDERS'),
                   const SizedBox(height: 10),
                   if (_reminders.isEmpty)
-                    _card(child: Column(children: [
+                    _card(context, child: Column(children: [
                       const Icon(Icons.notifications_none_rounded, size: 32,
                         color: AppColors.textSecondary),
                       const SizedBox(height: 8),
@@ -92,7 +92,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           decoration: BoxDecoration(
-                            color: AppColors.secondary,
+                            color: context.secondary,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text('Add test reminder',
@@ -107,7 +107,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         final r = e.value;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: _card(child: Row(children: [
+                          child: _card(context, child: Row(children: [
                             Container(
                               width: 36, height: 36,
                               decoration: BoxDecoration(
@@ -135,7 +135,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: AppColors.secondary,
+                                    color: context.secondary,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: const Text('Done',
@@ -153,7 +153,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   const SizedBox(height: 10),
                   ..._regionalAlerts.map((a) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: _card(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    child: _card(context, child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Container(
                         width: 36, height: 36,
                         decoration: BoxDecoration(
@@ -183,13 +183,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 
-  Widget _card({required Widget child}) => Container(
+  Widget _card(BuildContext context, {required Widget child}) => Container(
     width: double.infinity,
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.card,
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+      border: Border.all(color: context.border.withValues(alpha: 0.4)),
       boxShadow: [
         BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
         BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),

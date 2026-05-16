@@ -33,7 +33,7 @@ class KnowledgeHubScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -42,8 +42,8 @@ class KnowledgeHubScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                 decoration: BoxDecoration(
-                  color: AppColors.bg,
-                  border: Border(bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+                  color: context.bg,
+                  border: Border(bottom: BorderSide(color: context.border.withValues(alpha: 0.5))),
                 ),
                 child: Row(children: [
                   GestureDetector(
@@ -51,7 +51,7 @@ class KnowledgeHubScreen extends StatelessWidget {
                     child: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.secondary,
+                        color: context.secondary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.primary),
@@ -76,7 +76,7 @@ class KnowledgeHubScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   ..._diseases.map((d) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: _card(child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    child: _card(context, child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Container(
                         width: 40, height: 40,
                         decoration: BoxDecoration(
@@ -101,7 +101,7 @@ class KnowledgeHubScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   _sectionLabel('PREVENTION TIPS'),
                   const SizedBox(height: 10),
-                  _card(child: Column(
+                  _card(context, child: Column(
                     children: _tips.asMap().entries.map((e) => Padding(
                       padding: EdgeInsets.only(bottom: e.key < _tips.length - 1 ? 14 : 0),
                       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -116,7 +116,7 @@ class KnowledgeHubScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   _sectionLabel('GROWTH STAGES'),
                   const SizedBox(height: 10),
-                  _card(child: Column(
+                  _card(context, child: Column(
                     children: _stages.asMap().entries.map((e) {
                       final i = e.key;
                       final s = e.value;
@@ -166,13 +166,13 @@ class KnowledgeHubScreen extends StatelessWidget {
     );
   }
 
-  Widget _card({required Widget child}) => Container(
+  Widget _card(BuildContext context, {required Widget child}) => Container(
     width: double.infinity,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.card,
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+      border: Border.all(color: context.border.withValues(alpha: 0.4)),
       boxShadow: [
         BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
         BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),

@@ -32,7 +32,7 @@ class _AppShellState extends State<AppShell> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: Stack(
         children: [
           IndexedStack(index: _index, children: screens),
@@ -54,43 +54,34 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
-    // Total height = 32px (half of 64px scan button) + 64px nav + safe area
-    // Scan button center sits at the top border of the nav bar
-    const navH = 62.0;
-    const scanR = 32.0; // half of 64px scan button
+    const navH = 64.0;
 
-    return SizedBox(
-      height: scanR + navH + bottomPad,
+    return Container(
+      height: navH + bottomPad,
+      decoration: BoxDecoration(
+        color: context.card,
+        border: Border(top: BorderSide(color: context.border, width: 0.5)),
+      ),
       child: Stack(
-        clipBehavior: Clip.none,
         children: [
-          // Nav bar background
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: Container(
-              height: navH + bottomPad,
+          // Nav items row
+          Positioned.fill(
+            child: Padding(
               padding: EdgeInsets.only(bottom: bottomPad),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: AppColors.border, width: 0.5),
-                ),
-              ),
               child: Row(
                 children: [
-                  _item(0, Icons.home_rounded, 'Home'),
-                  _item(1, Icons.grass_rounded, 'Fields'),
-                  // Space for floating scan button
+                  _item(context, 0, Icons.home_rounded, 'Home'),
+                  _item(context, 1, Icons.grass_rounded, 'Fields'),
                   const SizedBox(width: 72),
-                  _item(3, Icons.people_rounded, 'Community'),
-                  _item(4, Icons.person_rounded, 'Profile'),
+                  _item(context, 3, Icons.people_rounded, 'Community'),
+                  _item(context, 4, Icons.person_rounded, 'Profile'),
                 ],
               ),
             ),
           ),
-          // Floating scan button — center aligns with nav top border
+          // Scan button — centered in nav content area
           Positioned(
-            top: 0, left: 0, right: 0,
+            top: 0, bottom: bottomPad, left: 0, right: 0,
             child: Center(
               child: GestureDetector(
                 onTap: () {
@@ -98,29 +89,25 @@ class _BottomNav extends StatelessWidget {
                   onTap(2);
                 },
                 child: Container(
-                  width: 64, height: 64,
+                  width: 60, height: 60,
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
+                    border: Border.all(color: context.card, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 20,
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 16,
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                        blurRadius: 12,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.document_scanner_rounded,
-                    color: Colors.white,
-                    size: 27,
-                  ),
+                  child: const Icon(Icons.document_scanner_rounded, color: Colors.white, size: 26),
                 ),
               ),
             ),
@@ -130,8 +117,9 @@ class _BottomNav extends StatelessWidget {
     );
   }
 
-  Widget _item(int index, IconData icon, String label) {
+  Widget _item(BuildContext context, int index, IconData icon, String label) {
     final selected = currentIndex == index;
+    final inactive = context.isDark ? const Color(0xFF6A6A6A) : const Color(0xFFAAAAAA);
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -143,11 +131,8 @@ class _BottomNav extends StatelessWidget {
               scale: selected ? 1.1 : 1.0,
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOut,
-              child: Icon(
-                icon,
-                size: 22,
-                color: selected ? AppColors.primary : const Color(0xFFAAAAAA),
-              ),
+              child: Icon(icon, size: 22,
+                color: selected ? AppColors.primary : inactive),
             ),
             const SizedBox(height: 3),
             AnimatedDefaultTextStyle(
@@ -155,7 +140,7 @@ class _BottomNav extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-                color: selected ? AppColors.primary : const Color(0xFFAAAAAA),
+                color: selected ? AppColors.primary : inactive,
               ),
               child: Text(label),
             ),

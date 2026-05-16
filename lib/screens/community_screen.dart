@@ -14,7 +14,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,8 +37,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
               margin: const EdgeInsets.only(top: 14),
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
               decoration: BoxDecoration(
-                color: AppColors.bg.withValues(alpha: 0.95),
-                border: Border(bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.4))),
+                color: context.bg.withValues(alpha: 0.95),
+                border: Border(bottom: BorderSide(color: context.border.withValues(alpha: 0.4))),
               ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -51,7 +51,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: _tab == i ? AppColors.primary : AppColors.secondary,
+                          color: _tab == i ? AppColors.primary : context.secondary,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(_tabs[i], style: TextStyle(
@@ -118,7 +118,7 @@ class _FeedTabState extends State<_FeedTab> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       children: [
         // Compose
-        _card(child: Row(children: [
+        _card(context, child: Row(children: [
           Expanded(
             child: TextField(
               controller: _draftCtrl,
@@ -126,7 +126,7 @@ class _FeedTabState extends State<_FeedTab> {
                 hintText: 'Share with your region…',
                 hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 filled: true,
-                fillColor: AppColors.secondary,
+                fillColor: context.secondary,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -154,7 +154,7 @@ class _FeedTabState extends State<_FeedTab> {
         const SizedBox(height: 14),
         ..._posts.map((p) => Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: _card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: _card(context, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Container(
                 width: 40, height: 40,
@@ -212,7 +212,7 @@ class _OutbreakTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       children: [
-        _card(child: Column(children: [
+        _card(context, child: Column(children: [
           Container(
             height: 200,
             decoration: BoxDecoration(
@@ -231,14 +231,14 @@ class _OutbreakTab extends StatelessWidget {
           ]),
         ])),
         const SizedBox(height: 12),
-        _card(child: Column(children: [
-          _riskRow(AppColors.red, 'Kedah', 'High risk'),
-          const Divider(height: 1, color: AppColors.border),
-          _riskRow(AppColors.amber, 'Selangor', 'Medium risk'),
-          const Divider(height: 1, color: AppColors.border),
-          _riskRow(AppColors.accent, 'Johor', 'Low risk'),
-          const Divider(height: 1, color: AppColors.border),
-          _riskRow(AppColors.amber, 'Pahang', 'Medium risk'),
+        _card(context, child: Column(children: [
+          _riskRow(context, AppColors.red, 'Kedah', 'High risk'),
+          Divider(height: 1, color: context.border),
+          _riskRow(context, AppColors.amber, 'Selangor', 'Medium risk'),
+          Divider(height: 1, color: context.border),
+          _riskRow(context, AppColors.accent, 'Johor', 'Low risk'),
+          Divider(height: 1, color: context.border),
+          _riskRow(context, AppColors.amber, 'Pahang', 'Medium risk'),
         ])),
       ],
     );
@@ -250,7 +250,7 @@ class _OutbreakTab extends StatelessWidget {
     Text(l, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
   ]);
 
-  Widget _riskRow(Color color, String region, String risk) => Padding(
+  Widget _riskRow(BuildContext context, Color color, String region, String risk) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 12),
     child: Row(children: [
       Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
@@ -300,7 +300,7 @@ class _ExpertsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       children: [
-        _card(child: Column(children: [
+        _card(context, child: Column(children: [
           Row(children: [
             Container(
               width: 48, height: 48,
@@ -337,11 +337,11 @@ class _ExpertsTab extends StatelessWidget {
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
             color: AppColors.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 10),
-        _card(child: Column(children: [
+        _card(context, child: Column(children: [
           _officeRow('DOA Selangor', '03-5510 1234'),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: context.border),
           _officeRow('MARDI Serdang', '03-8943 7111'),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: context.border),
           _officeRow('DOA Kedah', '04-733 1234'),
         ])),
         const SizedBox(height: 20),
@@ -349,7 +349,7 @@ class _ExpertsTab extends StatelessWidget {
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
             color: AppColors.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 10),
-        _card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _card(context, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _subsidyRow('Padi Subsidy Scheme (SSP)', 'RM 240/tonne for registered farmers.'),
           const SizedBox(height: 12),
           _subsidyRow('Fertilizer Subsidy (SBPN)', 'Free urea + NPK up to 2.4 ha.'),
@@ -387,13 +387,13 @@ class _ExpertsTab extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) {
+      builder: (sheetContext) {
         final slots = ['Mon 10:00', 'Tue 14:00', 'Wed 09:00', 'Thu 11:00', 'Fri 15:00', 'Sat 10:00'];
         return Padding(
           padding: const EdgeInsets.all(20),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 48, height: 4, decoration: BoxDecoration(
-              color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+              color: sheetContext.border, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 16),
             const Text('Book a consultation', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
               color: AppColors.textPrimary)),
@@ -405,10 +405,10 @@ class _ExpertsTab extends StatelessWidget {
               shrinkWrap: true, crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8,
               childAspectRatio: 2.5,
               children: slots.map((s) => GestureDetector(
-                onTap: () { Navigator.pop(context); },
+                onTap: () { Navigator.pop(sheetContext); },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.secondary,
+                    color: sheetContext.secondary,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(child: Text(s, style: const TextStyle(fontSize: 12,
@@ -458,9 +458,9 @@ class _LibraryTab extends StatelessWidget {
           childAspectRatio: 0.9,
           children: _videos.map((v) => Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.card,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+              border: Border.all(color: context.border.withValues(alpha: 0.4)),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8, offset: const Offset(0, 2))],
             ),
@@ -491,7 +491,7 @@ class _LibraryTab extends StatelessWidget {
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
             color: AppColors.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 10),
-        _card(child: Column(
+        _card(context, child: Column(
           children: _calendar.asMap().entries.map((e) {
             final i = e.key;
             final c = e.value;
@@ -514,7 +514,7 @@ class _LibraryTab extends StatelessWidget {
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
             color: AppColors.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 10),
-        _card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _card(context, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Icon(Icons.emoji_events_rounded, color: AppColors.amber, size: 28),
           const SizedBox(height: 8),
           const Text('From 4 t/ha to 7 t/ha in two seasons',
@@ -530,13 +530,13 @@ class _LibraryTab extends StatelessWidget {
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
-Widget _card({required Widget child}) => Container(
+Widget _card(BuildContext context, {required Widget child}) => Container(
   width: double.infinity,
   padding: const EdgeInsets.all(16),
   decoration: BoxDecoration(
-    color: Colors.white,
+    color: context.card,
     borderRadius: BorderRadius.circular(24),
-    border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+    border: Border.all(color: context.border.withValues(alpha: 0.4)),
     boxShadow: [
       BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
       BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),

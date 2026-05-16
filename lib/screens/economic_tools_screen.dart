@@ -34,7 +34,7 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -43,8 +43,8 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                 decoration: BoxDecoration(
-                  color: AppColors.bg,
-                  border: Border(bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+                  color: context.bg,
+                  border: Border(bottom: BorderSide(color: context.border.withValues(alpha: 0.5))),
                 ),
                 child: Row(children: [
                   GestureDetector(
@@ -52,7 +52,7 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
                     child: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.secondary,
+                        color: context.secondary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.primary),
@@ -76,7 +76,7 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
                   // Market price
                   _sectionLabel('PADDY MARKET PRICE (RM/TONNE)'),
                   const SizedBox(height: 10),
-                  _card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _card(context, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text('RM ${_priceHistory.last.toStringAsFixed(0)}',
@@ -99,20 +99,20 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
                   const SizedBox(height: 24),
                   _sectionLabel('TREATMENT COST CALCULATOR'),
                   const SizedBox(height: 10),
-                  _card(child: Column(children: [
-                    _numberInput('Area (acres)', _costAcres, 1, (v) => setState(() => _costAcres = v)),
-                    _numberInput('Cost per acre (RM)', _costPerAcre, 10, (v) => setState(() => _costPerAcre = v)),
+                  _card(context, child: Column(children: [
+                    _numberInput(context, 'Area (acres)', _costAcres, 1, (v) => setState(() => _costAcres = v)),
+                    _numberInput(context, 'Cost per acre (RM)', _costPerAcre, 10, (v) => setState(() => _costPerAcre = v)),
                     const SizedBox(height: 4),
-                    _resultBox('Total treatment cost', 'RM ${_treatmentCost.toStringAsFixed(0)}'),
+                    _resultBox(context, 'Total treatment cost', 'RM ${_treatmentCost.toStringAsFixed(0)}'),
                   ])),
 
                   const SizedBox(height: 24),
                   _sectionLabel('YIELD LOSS & ROI'),
                   const SizedBox(height: 10),
-                  _card(child: Column(children: [
-                    _numberInput('Normal yield (t/acre)', _yieldNormal, 0.1, (v) => setState(() => _yieldNormal = v)),
-                    _numberInput('Expected loss (t/acre)', _yieldLost, 0.1, (v) => setState(() => _yieldLost = v)),
-                    _numberInput('Price (RM/tonne)', _pricePerTonne, 20, (v) => setState(() => _pricePerTonne = v)),
+                  _card(context, child: Column(children: [
+                    _numberInput(context, 'Normal yield (t/acre)', _yieldNormal, 0.1, (v) => setState(() => _yieldNormal = v)),
+                    _numberInput(context, 'Expected loss (t/acre)', _yieldLost, 0.1, (v) => setState(() => _yieldLost = v)),
+                    _numberInput(context, 'Price (RM/tonne)', _pricePerTonne, 20, (v) => setState(() => _pricePerTonne = v)),
                     const SizedBox(height: 10),
                     Row(children: [
                       Expanded(child: _statBox('Loss value', 'RM ${_lossValue.toStringAsFixed(0)}',
@@ -146,7 +146,7 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
                   const SizedBox(height: 24),
                   _sectionLabel('INPUT COST TRACKER'),
                   const SizedBox(height: 10),
-                  _card(child: Column(children: [
+                  _card(context, child: Column(children: [
                     ..._inputs.asMap().entries.map((e) {
                       final i = e.key;
                       final item = e.value;
@@ -162,10 +162,10 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
                           ]),
                         ),
                         if (i < _inputs.length - 1)
-                          const Divider(height: 1, color: AppColors.border),
+                          Divider(height: 1, color: context.border),
                       ]);
                     }),
-                    const Divider(height: 16, color: AppColors.border),
+                    Divider(height: 16, color: context.border),
                     const Row(children: [
                       Text('Total', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary)),
@@ -183,7 +183,7 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
     );
   }
 
-  Widget _numberInput(String label, double value, double step, ValueChanged<double> onChange) {
+  Widget _numberInput(BuildContext context, String label, double value, double step, ValueChanged<double> onChange) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -195,9 +195,9 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.secondary,
+                color: context.secondary,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.border),
               ),
               child: Text(value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1),
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
@@ -210,7 +210,7 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
             child: Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color: AppColors.secondary, borderRadius: BorderRadius.circular(10)),
+                color: context.secondary, borderRadius: BorderRadius.circular(10)),
               child: const Icon(Icons.remove_rounded, size: 18, color: AppColors.textPrimary),
             ),
           ),
@@ -229,11 +229,11 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
     );
   }
 
-  Widget _resultBox(String label, String value) {
+  Widget _resultBox(BuildContext context, String label, String value) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.6),
+        color: context.secondary.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(children: [
@@ -259,13 +259,13 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
     );
   }
 
-  Widget _card({required Widget child}) => Container(
+  Widget _card(BuildContext context, {required Widget child}) => Container(
     width: double.infinity,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.card,
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+      border: Border.all(color: context.border.withValues(alpha: 0.4)),
       boxShadow: [
         BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
         BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),

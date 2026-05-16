@@ -27,12 +27,12 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
-            backgroundColor: AppColors.bg,
+            backgroundColor: context.bg,
             scrolledUnderElevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 20),
@@ -45,18 +45,18 @@ class _ResultScreenState extends State<ResultScreen> {
             sliver: SliverList(delegate: SliverChildListDelegate([
               _photoRow(),
               const SizedBox(height: 16),
-              _diseaseCard(),
+              _diseaseCard(context),
               const SizedBox(height: 24),
               if (d.symptoms.isNotEmpty || d.causes.isNotEmpty) ...[
                 _sectionLabel('DISEASE INFO'),
                 const SizedBox(height: 12),
-                _accordionCard(),
+                _accordionCard(context),
                 const SizedBox(height: 24),
               ],
               if (d.organicTreatments.isNotEmpty || d.chemicalTreatments.isNotEmpty) ...[
                 _sectionLabel('TREATMENT'),
                 const SizedBox(height: 12),
-                _treatmentCard(),
+                _treatmentCard(context),
               ],
             ])),
           ),
@@ -86,11 +86,11 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _diseaseCard() {
+  Widget _diseaseCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.card,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 10, offset: const Offset(0, 2))],
       ),
@@ -127,7 +127,7 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _accordionCard() {
+  Widget _accordionCard(BuildContext context) {
     final sections = [
       ('Symptoms', Icons.warning_amber_rounded, d.symptoms),
       ('Causes', Icons.eco_rounded, d.causes),
@@ -136,7 +136,7 @@ class _ResultScreenState extends State<ResultScreen> {
     ];
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.card,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 10, offset: const Offset(0, 2))],
       ),
@@ -172,14 +172,14 @@ class _ResultScreenState extends State<ResultScreen> {
                 ],
               ),
             ),
-            if (!isLast) const Divider(height: 1, indent: 16, endIndent: 16, color: AppColors.divider),
+            if (!isLast) Divider(height: 1, indent: 16, endIndent: 16, color: context.border),
           ]);
         }),
       ),
     );
   }
 
-  Widget _treatmentCard() {
+  Widget _treatmentCard(BuildContext context) {
     final treatments = _organicSelected ? d.organicTreatments : d.chemicalTreatments;
     final costPerAcre = _organicSelected ? 50.0 : 75.0;
     final products = _organicSelected
@@ -189,7 +189,7 @@ class _ResultScreenState extends State<ResultScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.card,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 10, offset: const Offset(0, 2))],
       ),
@@ -198,10 +198,10 @@ class _ResultScreenState extends State<ResultScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(30)),
+            decoration: BoxDecoration(color: context.bg, borderRadius: BorderRadius.circular(30)),
             child: Row(children: [
-              _tabBtn('🌱  Organic', _organicSelected, () => setState(() => _organicSelected = true)),
-              _tabBtn('⚗️  Chemical', !_organicSelected, () => setState(() => _organicSelected = false)),
+              _tabBtn(context, '🌱  Organic', _organicSelected, () => setState(() => _organicSelected = true)),
+              _tabBtn(context, '⚗️  Chemical', !_organicSelected, () => setState(() => _organicSelected = false)),
             ]),
           ),
           const SizedBox(height: 18),
@@ -234,15 +234,18 @@ class _ResultScreenState extends State<ResultScreen> {
             spacing: 8, runSpacing: 8,
             children: products.map((p) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-              decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.divider)),
+              decoration: BoxDecoration(
+                color: context.bg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: context.border),
+              ),
               child: Text(p, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
             )).toList(),
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: context.bg, borderRadius: BorderRadius.circular(14)),
             child: Column(children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('COST CALCULATOR', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 1)),
@@ -257,7 +260,7 @@ class _ResultScreenState extends State<ResultScreen> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     onChanged: (v) => setState(() => _acres = double.tryParse(v) ?? _acres),
                     decoration: InputDecoration(
-                      filled: true, fillColor: Colors.white,
+                      filled: true, fillColor: context.card,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
@@ -297,13 +300,13 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _tabBtn(String label, bool selected, VoidCallback onTap) => Expanded(
+  Widget _tabBtn(BuildContext context, String label, bool selected, VoidCallback onTap) => Expanded(
     child: GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.transparent,
+          color: selected ? context.card : Colors.transparent,
           borderRadius: BorderRadius.circular(26),
           boxShadow: selected ? [BoxShadow(color: AppColors.cardShadow, blurRadius: 4)] : null,
         ),

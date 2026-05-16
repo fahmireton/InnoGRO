@@ -23,7 +23,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -80,7 +80,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: AppColors.border.withValues(alpha: 0.6),
+                          color: context.border.withValues(alpha: 0.6),
                           width: 2,
                           strokeAlign: BorderSide.strokeAlignCenter,
                         ),
@@ -128,9 +128,9 @@ class _FieldCardState extends State<_FieldCard> {
         duration: const Duration(milliseconds: 120),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.card,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+            border: Border.all(color: context.border.withValues(alpha: 0.4)),
             boxShadow: [
               BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
               BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),

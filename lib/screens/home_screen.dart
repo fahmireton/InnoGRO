@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.only(bottom: 120),
@@ -154,10 +154,10 @@ class _Section extends StatelessWidget {
 
 // ── Card helper ──────────────────────────────────────────────────────────────
 
-BoxDecoration _cardDecoration({double radius = 24}) => BoxDecoration(
-  color: Colors.white,
+BoxDecoration _cardDecoration(BuildContext context, {double radius = 24}) => BoxDecoration(
+  color: context.card,
   borderRadius: BorderRadius.circular(radius),
-  border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+  border: Border.all(color: context.border.withValues(alpha: 0.4)),
   boxShadow: [
     BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
     BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
@@ -173,7 +173,7 @@ class _WeatherCard extends StatelessWidget {
       onTap: () => Navigator.push(context, slideRoute(const WeatherDetailScreen())),
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: _cardDecoration(),
+        decoration: _cardDecoration(context),
         child: Row(children: [
           Container(
             width: 40, height: 40,
@@ -223,7 +223,7 @@ class _GlanceGrid extends StatelessWidget {
       childAspectRatio: 1.05,
       children: items.map((item) => Container(
         padding: const EdgeInsets.all(16),
-        decoration: _cardDecoration(),
+        decoration: _cardDecoration(context),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
             width: 40, height: 40,
@@ -267,7 +267,7 @@ class _DiseaseRiskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
+      decoration: _cardDecoration(context),
       child: Column(children: [
         Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -285,21 +285,21 @@ class _DiseaseRiskCard extends StatelessWidget {
         ]),
         const SizedBox(height: 16),
         Row(children: [
-          Expanded(child: _mini(Icons.thermostat_rounded, '30°', 'Temp')),
+          Expanded(child: _mini(context, Icons.thermostat_rounded, '30°', 'Temp')),
           const SizedBox(width: 8),
-          Expanded(child: _mini(Icons.water_drop_outlined, '76%', 'Humidity')),
+          Expanded(child: _mini(context, Icons.water_drop_outlined, '76%', 'Humidity')),
           const SizedBox(width: 8),
-          Expanded(child: _mini(Icons.air_rounded, '9 km/h', 'Wind')),
+          Expanded(child: _mini(context, Icons.air_rounded, '9 km/h', 'Wind')),
         ]),
       ]),
     );
   }
 
-  Widget _mini(IconData icon, String value, String label) {
+  Widget _mini(BuildContext context, IconData icon, String value, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.6),
+        color: context.secondary.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(children: [
@@ -324,7 +324,7 @@ class _RiskRing extends StatelessWidget {
     return SizedBox(
       width: 84, height: 84,
       child: CustomPaint(
-        painter: _RingPainter(score / 100, color),
+        painter: _RingPainter(score / 100, color, context.secondary),
         child: Center(
           child: Text('$score',
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
@@ -338,14 +338,15 @@ class _RiskRing extends StatelessWidget {
 class _RingPainter extends CustomPainter {
   final double progress;
   final Color color;
-  _RingPainter(this.progress, this.color);
+  final Color trackColor;
+  _RingPainter(this.progress, this.color, this.trackColor);
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 8;
     final trackPaint = Paint()
-      ..color = AppColors.secondary
+      ..color = trackColor
       ..strokeWidth = 8
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -425,7 +426,7 @@ class _EmptyScanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-      decoration: _cardDecoration(),
+      decoration: _cardDecoration(context),
       child: Column(children: [
         Icon(Icons.document_scanner_rounded, size: 32, color: AppColors.textSecondary.withValues(alpha: 0.5)),
         const SizedBox(height: 8),
@@ -446,7 +447,7 @@ class _AlertsCard extends StatelessWidget {
       onTap: () => Navigator.push(context, slideRoute(const AlertsScreen())),
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: _cardDecoration(),
+        decoration: _cardDecoration(context),
         child: const Row(children: [
           Expanded(child: Text("All clear. We'll notify you of risks.",
             style: TextStyle(fontSize: 13, color: AppColors.textSecondary))),
@@ -483,13 +484,13 @@ class _ExploreGrid extends StatelessWidget {
         onTap: item.$3,
         child: Container(
           padding: const EdgeInsets.all(16),
-          decoration: _cardDecoration(),
+          decoration: _cardDecoration(context),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: AppColors.secondary,
+                color: context.secondary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(item.$1, color: AppColors.primary, size: 20),

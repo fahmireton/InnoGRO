@@ -17,7 +17,7 @@ class WeatherDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -26,8 +26,8 @@ class WeatherDetailScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                 decoration: BoxDecoration(
-                  color: AppColors.bg,
-                  border: Border(bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+                  color: context.bg,
+                  border: Border(bottom: BorderSide(color: context.border.withValues(alpha: 0.5))),
                 ),
                 child: Row(children: [
                   GestureDetector(
@@ -35,7 +35,7 @@ class WeatherDetailScreen extends StatelessWidget {
                     child: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.secondary, borderRadius: BorderRadius.circular(10)),
+                        color: context.secondary, borderRadius: BorderRadius.circular(10)),
                       child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.primary),
                     ),
                   ),
@@ -55,7 +55,7 @@ class WeatherDetailScreen extends StatelessWidget {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   // Current weather
-                  _card(child: Column(children: [
+                  _card(context, child: Column(children: [
                     Row(children: [
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         const Text('30°C',
@@ -67,19 +67,19 @@ class WeatherDetailScreen extends StatelessWidget {
                       const Icon(Icons.wb_cloudy_rounded, size: 72, color: AppColors.info),
                     ]),
                     const SizedBox(height: 16),
-                    Row(children: const [
-                      Expanded(child: _MiniStat(icon: Icons.water_drop_outlined, label: 'Humidity', value: '76%')),
-                      SizedBox(width: 8),
-                      Expanded(child: _MiniStat(icon: Icons.water_rounded, label: 'Rainfall', value: '0.5mm')),
-                      SizedBox(width: 8),
-                      Expanded(child: _MiniStat(icon: Icons.air_rounded, label: 'Wind', value: '9 km/h')),
+                    Row(children: [
+                      Expanded(child: _MiniStat(context: context, icon: Icons.water_drop_outlined, label: 'Humidity', value: '76%')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _MiniStat(context: context, icon: Icons.water_rounded, label: 'Rainfall', value: '0.5mm')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _MiniStat(context: context, icon: Icons.air_rounded, label: 'Wind', value: '9 km/h')),
                     ]),
                   ])),
 
                   const SizedBox(height: 24),
                   _sectionLabel('DISEASE RISK'),
                   const SizedBox(height: 10),
-                  _card(child: Column(children: [
+                  _card(context, child: Column(children: [
                     Row(children: [
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         const Text('Low', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800,
@@ -93,10 +93,10 @@ class WeatherDetailScreen extends StatelessWidget {
                     const SizedBox(height: 10),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(6),
-                      child: const LinearProgressIndicator(
+                      child: LinearProgressIndicator(
                         value: 0.30,
-                        backgroundColor: AppColors.secondary,
-                        valueColor: AlwaysStoppedAnimation(AppColors.accent),
+                        backgroundColor: context.secondary,
+                        valueColor: const AlwaysStoppedAnimation(AppColors.accent),
                         minHeight: 8,
                       ),
                     ),
@@ -105,7 +105,7 @@ class WeatherDetailScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   _sectionLabel('7-DAY FORECAST'),
                   const SizedBox(height: 10),
-                  _card(child: Column(
+                  _card(context, child: Column(
                     children: _forecast.asMap().entries.map((e) {
                       final i = e.key;
                       final d = e.value;
@@ -136,7 +136,7 @@ class WeatherDetailScreen extends StatelessWidget {
                           ]),
                         ),
                         if (i < _forecast.length - 1)
-                          const Divider(height: 1, color: AppColors.border),
+                          Divider(height: 1, color: context.border),
                       ]);
                     }).toList(),
                   )),
@@ -144,7 +144,7 @@ class WeatherDetailScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   _sectionLabel('OPTIMAL SPRAYING WINDOWS'),
                   const SizedBox(height: 10),
-                  _card(child: Column(
+                  _card(context, child: Column(
                     children: _forecast.take(5).toList().asMap().entries.map((e) {
                       final i = e.key;
                       final d = e.value;
@@ -179,13 +179,13 @@ class WeatherDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _card({required Widget child}) => Container(
+  Widget _card(BuildContext context, {required Widget child}) => Container(
     width: double.infinity,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.card,
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+      border: Border.all(color: context.border.withValues(alpha: 0.4)),
       boxShadow: [
         BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
         BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
@@ -200,16 +200,17 @@ class WeatherDetailScreen extends StatelessWidget {
 }
 
 class _MiniStat extends StatelessWidget {
+  final BuildContext context;
   final IconData icon;
   final String label, value;
-  const _MiniStat({required this.icon, required this.label, required this.value});
+  const _MiniStat({required this.context, required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.5),
+        color: context.secondary.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(children: [

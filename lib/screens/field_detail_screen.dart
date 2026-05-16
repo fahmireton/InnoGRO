@@ -33,14 +33,14 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     final currentIdx = f.stage.index;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             // Sticky header
             SliverAppBar(
               pinned: true,
-              backgroundColor: AppColors.bg,
+              backgroundColor: context.bg,
               scrolledUnderElevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
@@ -91,10 +91,10 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     childAspectRatio: 2.2,
                     children: [
-                      _statBox('${f.areaMorgen.toStringAsFixed(1)} ac', 'Size', AppColors.textPrimary),
-                      _statBox('${days}d', 'Days in field', AppColors.textPrimary),
-                      _statBox(f.healthStatus.label, 'Health', f.healthStatus.color),
-                      _statBox('${f.waterLevel}%', 'Water level', AppColors.info),
+                      _statBox(context, '${f.areaMorgen.toStringAsFixed(1)} ac', 'Size', AppColors.textPrimary),
+                      _statBox(context, '${days}d', 'Days in field', AppColors.textPrimary),
+                      _statBox(context, f.healthStatus.label, 'Health', f.healthStatus.color),
+                      _statBox(context, '${f.waterLevel}%', 'Water level', AppColors.info),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -102,19 +102,19 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                   // Growth tracking
                   _sectionLabel('Growth stage'),
                   const SizedBox(height: 10),
-                  _growthCard(stages, currentIdx, days),
+                  _growthCard(context, stages, currentIdx, days),
                   const SizedBox(height: 24),
 
                   // Disease history
                   _sectionLabel('Disease history'),
                   const SizedBox(height: 10),
-                  _diseaseCard(),
+                  _diseaseCard(context),
                   const SizedBox(height: 24),
 
                   // Notes
                   _sectionLabel('Notes'),
                   const SizedBox(height: 10),
-                  _notesCard(),
+                  _notesCard(context),
                 ]),
               ),
             ),
@@ -124,11 +124,11 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     );
   }
 
-  Widget _statBox(String value, String label, Color valueColor) {
+  Widget _statBox(BuildContext context, String value, String label, Color valueColor) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.5),
+        color: context.secondary.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -141,13 +141,13 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     );
   }
 
-  Widget _growthCard(List<GrowthStage> stages, int currentIdx, int days) {
+  Widget _growthCard(BuildContext context, List<GrowthStage> stages, int currentIdx, int days) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
           BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
@@ -173,7 +173,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: active ? AppColors.primary : AppColors.secondary,
+                      color: active ? AppColors.primary : context.secondary,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(s.label,
@@ -199,7 +199,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
           borderRadius: BorderRadius.circular(6),
           child: LinearProgressIndicator(
             value: (days / 110).clamp(0.0, 1.0),
-            backgroundColor: AppColors.secondary,
+            backgroundColor: context.secondary,
             valueColor: const AlwaysStoppedAnimation(AppColors.primary),
             minHeight: 8,
           ),
@@ -226,13 +226,13 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     );
   }
 
-  Widget _diseaseCard() {
+  Widget _diseaseCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
           BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
@@ -284,22 +284,22 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                       color: s.severity == 'High' ? AppColors.red : AppColors.amber)),
                 ),
               ]),
-              if (!isLast) const Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: Divider(height: 1, color: AppColors.border),
+              if (!isLast) Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Divider(height: 1, color: context.border),
               ),
             ]);
           }).toList()),
     );
   }
 
-  Widget _notesCard() {
+  Widget _notesCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
           BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
@@ -314,7 +314,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                 hintText: 'Add observation...',
                 hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 filled: true,
-                fillColor: AppColors.secondary,
+                fillColor: context.secondary,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -348,7 +348,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.secondary.withValues(alpha: 0.5),
+              color: context.secondary.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

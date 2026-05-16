@@ -17,16 +17,16 @@ class AppColors {
   static const red = Color(0xFFDC2626);
   static const redLight = Color(0xFFFEE2E2);
 
-  // Backgrounds
-  static const bg = Color(0xFFF7F6F2);        // page background
-  static const secondary = Color(0xFFF0EFE9); // secondary container bg
+  // Backgrounds — light
+  static const bg = Color(0xFFF7F6F2);
+  static const secondary = Color(0xFFF0EFE9);
   static const card = Colors.white;
 
-  // Text
+  // Text — light
   static const textPrimary = Color(0xFF1A1A1A);
   static const textSecondary = Color(0xFF888888);
 
-  // Border
+  // Border — light
   static const border = Color(0xFFE5E5E0);
   static const divider = Color(0xFFEEEEEE);
 
@@ -35,8 +35,22 @@ class AppColors {
   static const shadowLg = Color(0x1A000000);
 
   // Dark mode
-  static const darkBg = Color(0xFF0D1F0F);
-  static const darkCard = Color(0xFF1A2E1C);
+  static const darkBg = Color(0xFF0D1A10);
+  static const darkCard = Color(0xFF162318);
+  static const darkSecondary = Color(0xFF1E2E20);
+  static const darkBorder = Color(0xFF2A3D2C);
+  static const darkTextPrimary = Color(0xFFEEEEEE);
+  static const darkTextSecondary = Color(0xFF9A9A9A);
+}
+
+extension AppTheme on BuildContext {
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
+  Color get bg => isDark ? AppColors.darkBg : AppColors.bg;
+  Color get card => isDark ? AppColors.darkCard : Colors.white;
+  Color get secondary => isDark ? AppColors.darkSecondary : AppColors.secondary;
+  Color get border => isDark ? AppColors.darkBorder : AppColors.border;
+  Color get textPrimary => isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+  Color get textSecondary => isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 }
 
 // ios-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)
