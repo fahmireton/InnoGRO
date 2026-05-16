@@ -1,0 +1,33 @@
+workflows:
+  ios-build:
+    name: VisionGRO iOS Build
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      flutter: 3.32.1
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios && pod install
+
+      - name: Build iOS (no codesign)
+        script: |
+          flutter build ios --release --no-codesign
+
+    artifacts:
+      - build/ios/iphoneos/Runner.app
+
+    publishing:
+      email:
+        recipients:
+          - gptformysiblings@gmail.com
+        notify:
+          success: true
+          failure: true
