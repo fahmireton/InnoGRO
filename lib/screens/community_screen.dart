@@ -206,8 +206,8 @@ class _OutbreakTab extends StatelessWidget {
       const SizedBox(width: 10),
       const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
       const SizedBox(width: 4),
-      Text(region, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary)),
-      const Spacer(),
+      Expanded(child: Text(region, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis)),
+      const SizedBox(width: 8),
       Text(risk, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: riskColor)),
     ]),
   );
@@ -369,7 +369,7 @@ class _LibraryTab extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(v.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary)),
+                  Text(v.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 2),
                   Text(v.$3, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                 ]),

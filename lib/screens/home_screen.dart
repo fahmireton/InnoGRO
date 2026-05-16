@@ -122,7 +122,7 @@ class _WeatherCard extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary)),
                 const SizedBox(height: 2),
                 Text('Sekinchan, Selangor · Humidity 76%',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),

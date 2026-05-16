@@ -59,7 +59,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                 Row(children: [
                   const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
                   const SizedBox(width: 4),
-                  Text(f.location, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Flexible(child: Text(f.location, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ]),
                 const SizedBox(height: 24),
                 _sectionLabel('GROWTH STAGE'),

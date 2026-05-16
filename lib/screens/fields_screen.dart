@@ -135,10 +135,10 @@ class _FieldGridCard extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(field.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
-                Text(field.location.split(',').first, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text(field.location.split(',').first, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
                 Text('${field.areaMorgen} ac · ${field.stage.label}',
-                  style: TextStyle(fontSize: 11, color: _iconColor, fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontSize: 11, color: _iconColor, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
               ]),
             ),
           ],
