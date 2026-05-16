@@ -72,7 +72,7 @@ class HomeScreen extends StatelessWidget {
       mainAxisSpacing: 12,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.15,
       children: [
         _GlanceCard(icon: Icons.grass_rounded, value: '${sampleFields.length}', label: 'Fields', iconColor: AppColors.primary),
         _GlanceCard(icon: Icons.document_scanner_rounded, value: '0', label: 'Scans (30d)', iconColor: AppColors.primary),
@@ -187,7 +187,7 @@ class _DiseaseRiskCard extends StatelessWidget {
   const _DiseaseRiskCard({required this.score});
 
   String get _label {
-    if (score < 30) return 'Low';
+    if (score <= 33) return 'Low';
     if (score < 65) return 'Moderate';
     return 'High';
   }
@@ -261,7 +261,7 @@ class _RiskDial extends StatelessWidget {
   const _RiskDial({required this.score});
 
   Color get _color {
-    if (score < 30) return AppColors.accent;
+    if (score <= 33) return AppColors.accent;
     if (score < 65) return AppColors.amber;
     return AppColors.red;
   }
