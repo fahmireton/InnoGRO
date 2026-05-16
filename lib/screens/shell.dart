@@ -69,23 +69,22 @@ class _BottomNav extends StatelessWidget {
             bottom: 0, left: 0, right: 0,
             child: Container(
               height: navH + bottomPad,
+              padding: EdgeInsets.only(bottom: bottomPad),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(
                   top: BorderSide(color: AppColors.border, width: 0.5),
                 ),
               ),
-              child: SafeArea(
-                child: Row(
-                  children: [
-                    _item(0, Icons.home_rounded, 'Home'),
-                    _item(1, Icons.grass_rounded, 'Fields'),
-                    // Space for floating scan button
-                    const SizedBox(width: 72),
-                    _item(3, Icons.people_rounded, 'Community'),
-                    _item(4, Icons.person_rounded, 'Profile'),
-                  ],
-                ),
+              child: Row(
+                children: [
+                  _item(0, Icons.home_rounded, 'Home'),
+                  _item(1, Icons.grass_rounded, 'Fields'),
+                  // Space for floating scan button
+                  const SizedBox(width: 72),
+                  _item(3, Icons.people_rounded, 'Community'),
+                  _item(4, Icons.person_rounded, 'Profile'),
+                ],
               ),
             ),
           ),

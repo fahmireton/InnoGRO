@@ -220,7 +220,7 @@ class _GlanceGrid extends StatelessWidget {
       mainAxisSpacing: 12,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.3,
+      childAspectRatio: 1.05,
       children: items.map((item) => Container(
         padding: const EdgeInsets.all(16),
         decoration: _cardDecoration(),
