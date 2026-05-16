@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/field.dart';
+import '../transitions.dart';
 import 'field_detail_screen.dart';
 import 'add_field_screen.dart';
 
@@ -57,7 +58,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
                     }
                     final f = sampleFields[i];
                     return _FieldGridCard(field: f, onTap: () async {
-                      await Navigator.push(context, MaterialPageRoute(builder: (_) => FieldDetailScreen(field: f)));
+                      await Navigator.push(context, slideRoute(FieldDetailScreen(field: f)));
                       setState(() {});
                     });
                   },
@@ -71,29 +72,33 @@ class _FieldsScreenState extends State<FieldsScreen> {
   }
 }
 
-class _FieldGridCard extends StatelessWidget {
+class _FieldGridCard extends StatefulWidget {
   final PaddyField field;
   final VoidCallback onTap;
   const _FieldGridCard({required this.field, required this.onTap});
+  @override
+  State<_FieldGridCard> createState() => _FieldGridCardState();
+}
+
+class _FieldGridCardState extends State<_FieldGridCard> {
+  bool _pressed = false;
 
   Color get _bgTop {
-    switch (field.healthStatus) {
+    switch (widget.field.healthStatus) {
       case HealthStatus.healthy: return const Color(0xFFD4EDD9);
       case HealthStatus.watch: return const Color(0xFFFFF0CC);
       case HealthStatus.critical: return const Color(0xFFFFD4D4);
     }
   }
-
   Color get _bgBottom {
-    switch (field.healthStatus) {
+    switch (widget.field.healthStatus) {
       case HealthStatus.healthy: return const Color(0xFFF0FAF2);
       case HealthStatus.watch: return const Color(0xFFFFFAF0);
       case HealthStatus.critical: return const Color(0xFFFFF0F0);
     }
   }
-
   Color get _iconColor {
-    switch (field.healthStatus) {
+    switch (widget.field.healthStatus) {
       case HealthStatus.healthy: return AppColors.accent;
       case HealthStatus.watch: return AppColors.amber;
       case HealthStatus.critical: return AppColors.red;
@@ -103,45 +108,53 @@ class _FieldGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 10, offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                Container(
-                  height: 110,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [_bgTop, _bgBottom], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: _pressed ? 4 : 10, offset: const Offset(0, 2))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
+                children: [
+                  Container(
+                    height: 110,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [_bgTop, _bgBottom], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: Center(child: Icon(Icons.grass_rounded, size: 52, color: _iconColor)),
                   ),
-                  child: Center(child: Icon(Icons.grass_rounded, size: 52, color: _iconColor)),
-                ),
-                Positioned(
-                  top: 10, right: 10,
-                  child: Container(width: 10, height: 10,
-                    decoration: BoxDecoration(color: _iconColor, shape: BoxShape.circle)),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(field.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text(field.location.split(',').first, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text('${field.areaMorgen} ac · ${field.stage.label}',
-                  style: TextStyle(fontSize: 11, color: _iconColor, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ]),
-            ),
-          ],
+                  Positioned(
+                    top: 10, right: 10,
+                    child: Container(width: 10, height: 10,
+                      decoration: BoxDecoration(color: _iconColor, shape: BoxShape.circle)),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(widget.field.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text(widget.field.location.split(',').first, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text('${widget.field.areaMorgen} ac · ${widget.field.stage.label}',
+                    style: TextStyle(fontSize: 11, color: _iconColor, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ]),
+              ),
+            ],
+          ),
         ),
       ),
     );

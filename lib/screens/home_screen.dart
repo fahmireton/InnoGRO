@@ -3,9 +3,40 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/field.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final VoidCallback? onScanTap;
   const HomeScreen({super.key, this.onScanTap});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  final List<Animation<double>> _fades = [];
+  final List<Animation<Offset>> _slides = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+    for (int i = 0; i < 8; i++) {
+      final start = (i * 0.1).clamp(0.0, 0.7);
+      final end = (start + 0.4).clamp(0.0, 1.0);
+      _fades.add(Tween(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _ctrl, curve: Interval(start, end, curve: Curves.easeOut))));
+      _slides.add(Tween(begin: const Offset(0, 0.06), end: Offset.zero).animate(
+        CurvedAnimation(parent: _ctrl, curve: Interval(start, end, curve: Curves.easeOut))));
+    }
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  Widget _animate(int i, Widget child) => FadeTransition(
+    opacity: _fades[i],
+    child: SlideTransition(position: _slides[i], child: child),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -15,37 +46,37 @@ class HomeScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
           children: [
-            _buildHeader(),
+            _animate(0, _buildHeader()),
             const SizedBox(height: 18),
-            _WeatherCard(),
+            _animate(1, _WeatherCard()),
             const SizedBox(height: 24),
-            _sectionLabel('AT A GLANCE'),
+            _animate(2, _sectionLabel('AT A GLANCE')),
             const SizedBox(height: 12),
-            _buildGlanceGrid(),
+            _animate(2, _buildGlanceGrid()),
             const SizedBox(height: 24),
-            _sectionLabel('TODAY\'S DISEASE RISK'),
+            _animate(3, _sectionLabel('TODAY\'S DISEASE RISK')),
             const SizedBox(height: 12),
-            _DiseaseRiskCard(score: 30),
+            _animate(3, _DiseaseRiskCard(score: 30)),
             const SizedBox(height: 16),
-            _ScanBanner(onTap: onScanTap),
+            _animate(4, _ScanBanner(onTap: widget.onScanTap)),
             const SizedBox(height: 24),
-            _sectionLabel('RECENT SCANS'),
+            _animate(5, _sectionLabel('RECENT SCANS')),
             const SizedBox(height: 12),
-            _RecentScansCard(),
+            _animate(5, _RecentScansCard()),
             const SizedBox(height: 24),
-            Row(
+            _animate(6, Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _sectionLabel('SMART ALERTS'),
-                Text('All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                const Text('All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
               ],
-            ),
+            )),
             const SizedBox(height: 12),
-            _AlertsCard(),
+            _animate(6, _AlertsCard()),
             const SizedBox(height: 24),
-            _sectionLabel('EXPLORE'),
+            _animate(7, _sectionLabel('EXPLORE')),
             const SizedBox(height: 12),
-            _ExploreGrid(),
+            _animate(7, _ExploreGrid()),
           ],
         ),
       ),
@@ -53,13 +84,13 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildHeader() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Good morning, Farmer',
+        Text('Good morning, Farmer',
           style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w400)),
-        const SizedBox(height: 3),
-        const Text('Your Farm',
+        SizedBox(height: 3),
+        Text('Your Farm',
           style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.8)),
       ],
     );
@@ -75,9 +106,9 @@ class HomeScreen extends StatelessWidget {
       childAspectRatio: 1.15,
       children: [
         _GlanceCard(icon: Icons.grass_rounded, value: '${sampleFields.length}', label: 'Fields', iconColor: AppColors.primary),
-        _GlanceCard(icon: Icons.document_scanner_rounded, value: '0', label: 'Scans (30d)', iconColor: AppColors.primary),
-        _GlanceCard(icon: Icons.water_drop_rounded, value: '0', label: 'Active treatments', iconColor: AppColors.primary),
-        _GlanceCard(icon: Icons.warning_rounded, value: '1', label: 'Critical fields', iconColor: AppColors.red, valueColor: AppColors.red),
+        const _GlanceCard(icon: Icons.document_scanner_rounded, value: '0', label: 'Scans (30d)', iconColor: AppColors.primary),
+        const _GlanceCard(icon: Icons.water_drop_rounded, value: '0', label: 'Active treatments', iconColor: AppColors.primary),
+        const _GlanceCard(icon: Icons.warning_rounded, value: '1', label: 'Critical fields', iconColor: AppColors.red, valueColor: AppColors.red),
       ],
     );
   }

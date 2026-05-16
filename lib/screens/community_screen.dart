@@ -53,12 +53,23 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ]),
             ),
             Expanded(
-              child: IndexedStack(index: _tab, children: [
-                _FeedTab(),
-                _OutbreakTab(),
-                _ExpertsTab(),
-                _LibraryTab(),
-              ]),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, anim) => FadeTransition(
+                  opacity: anim,
+                  child: SlideTransition(
+                    position: Tween(begin: const Offset(0, 0.04), end: Offset.zero)
+                      .animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
+                    child: child,
+                  ),
+                ),
+                child: KeyedSubtree(
+                  key: ValueKey(_tab),
+                  child: [_FeedTab(), _OutbreakTab(), _ExpertsTab(), _LibraryTab()][_tab],
+                ),
+              ),
             ),
           ],
         ),
