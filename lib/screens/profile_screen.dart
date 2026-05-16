@@ -1,164 +1,190 @@
 import 'package:flutter/material.dart';
-import '../theme.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  static const _bg = Color(0xFF0D1F0F);
+  static const _card = Color(0xFF1A2E1C);
+  static const _card2 = Color(0xFF162617);
+  static const _greenDark = Color(0xFF2D5A3D);
+  static const _textPrimary = Color(0xFFEEEEEE);
+  static const _textSecondary = Color(0xFF7A9E82);
+  static const _divider = Color(0xFF243826);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 200,
-            backgroundColor: AppColors.primary,
-            title: const Text('Profile'),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 40),
-                    Container(
-                      width: 72, height: 72,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white30, width: 2),
-                      ),
-                      child: const Center(child: Text('👨‍🌾', style: TextStyle(fontSize: 36))),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text('Ahmad Razif', style: TextStyle(
-                      color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
-                    const Text('Kedah, Malaysia • Paddy Farmer', style: TextStyle(color: Colors.white60, fontSize: 12)),
-                  ],
-                ),
-              ),
+      backgroundColor: _bg,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+          children: [
+            const Text('Profile',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: _textPrimary, letterSpacing: -0.5)),
+            const SizedBox(height: 2),
+            const Text('Personalise your farm',
+              style: TextStyle(fontSize: 14, color: _textSecondary)),
+            const SizedBox(height: 20),
+            _avatarCard(),
+            const SizedBox(height: 16),
+            _premiumCard(),
+            const SizedBox(height: 24),
+            _sectionLabel('PREFERENCES'),
+            const SizedBox(height: 10),
+            _prefsCard(),
+            const SizedBox(height: 24),
+            _sectionLabel('DATA'),
+            const SizedBox(height: 10),
+            _dataCard(),
+            const SizedBox(height: 32),
+            const Center(
+              child: Text('PadiGuard AI · v1.0 · Made for smallholder farmers',
+                style: TextStyle(fontSize: 11, color: _textSecondary)),
             ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _statsRow(),
-                const SizedBox(height: 24),
-                _section('Farm Details', [
-                  _tile(Icons.grass_rounded, 'Farm Type', 'Paddy / Rice', AppColors.accent),
-                  _tile(Icons.straighten_rounded, 'Total Area', '4.3 morgen', const Color(0xFF0EA5E9)),
-                  _tile(Icons.location_on_rounded, 'Location', 'Kedah, Malaysia', AppColors.red),
-                  _tile(Icons.agriculture_rounded, 'Experience', '12 years', AppColors.amber),
-                ]),
-                const SizedBox(height: 16),
-                _section('Preferences', [
-                  _tile(Icons.language_rounded, 'Language', 'Bahasa Melayu', AppColors.primary),
-                  _tile(Icons.notifications_rounded, 'Notifications', 'Enabled', AppColors.accent),
-                  _tile(Icons.dark_mode_rounded, 'Dark Mode', 'Off', AppColors.textSecondary),
-                ]),
-                const SizedBox(height: 16),
-                _section('Support', [
-                  _tile(Icons.help_rounded, 'Help & FAQ', '', AppColors.primary),
-                  _tile(Icons.star_rounded, 'Rate VisionGRO', '', AppColors.amber),
-                  _tile(Icons.info_rounded, 'About', 'v1.0.0', AppColors.textSecondary),
-                ]),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentLight,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(children: [
-                    const Text('🌟', style: TextStyle(fontSize: 28)),
-                    const SizedBox(width: 14),
-                    Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Upgrade to Premium', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.primary)),
-                        const Text('Unlimited scans, expert consultations & advanced analytics',
-                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4)),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                          child: const Text('Learn More', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                        ),
-                      ],
-                    )),
-                  ]),
-                ),
-              ]),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _statsRow() {
-    return Row(children: [
-      Expanded(child: _stat('12', 'Total Scans')),
-      const SizedBox(width: 12),
-      Expanded(child: _stat('2', 'Active Fields')),
-      const SizedBox(width: 12),
-      Expanded(child: _stat('3', 'Harvests')),
-    ]);
-  }
-
-  Widget _stat(String value, String label) => Container(
-    padding: const EdgeInsets.symmetric(vertical: 16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 6, offset: const Offset(0, 2))],
-    ),
-    child: Column(children: [
-      Text(value, style: const TextStyle(
-        fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.primary, letterSpacing: -0.5)),
-      const SizedBox(height: 2),
-      Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-    ]),
-  );
-
-  Widget _section(String title, List<Widget> children) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-      const SizedBox(height: 8),
-      Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 6, offset: const Offset(0, 2))],
-        ),
-        child: Column(children: children),
+  Widget _avatarCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(20),
       ),
-    ]);
-  }
-
-  Widget _tile(IconData icon, String title, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: Row(children: [
-        Container(width: 32, height: 32,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, color: color, size: 16)),
-        const SizedBox(width: 12),
-        Expanded(child: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary))),
-        if (value.isNotEmpty)
-          Text(value, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-        const SizedBox(width: 6),
-        const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 18),
+        Container(
+          width: 56, height: 56,
+          decoration: BoxDecoration(color: _greenDark, shape: BoxShape.circle),
+          child: const Center(
+            child: Text('F', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
+          ),
+        ),
+        const SizedBox(width: 16),
+        const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Farmer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _textPrimary)),
+          SizedBox(height: 2),
+          Text('My Paddy Farm', style: TextStyle(fontSize: 13, color: _textSecondary)),
+        ]),
       ]),
     );
   }
+
+  Widget _premiumCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E4D2B), Color(0xFF2D6A3F)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(children: [
+        Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 22),
+        ),
+        const SizedBox(width: 14),
+        const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('PadiGuard Premium', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+          SizedBox(height: 2),
+          Text('Unlock advanced AI features', style: TextStyle(fontSize: 12, color: Colors.white70)),
+        ])),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text('Upgrade', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E4D2B))),
+        ),
+      ]),
+    );
+  }
+
+  Widget _prefsCard() {
+    return Container(
+      decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16)),
+      child: Column(children: [
+        _prefRow('Region', 'Selangor, Malaysia', false),
+        _dividerLine(),
+        _prefDropdown('Theme', 'System'),
+        _dividerLine(),
+        _prefDropdown('Units', 'Metric'),
+        _dividerLine(),
+        _prefDropdown('Language', 'English'),
+      ]),
+    );
+  }
+
+  Widget _prefRow(String label, String value, bool isDropdown) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(children: [
+        Text(label, style: const TextStyle(fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w500)),
+        const Spacer(),
+        Text(value, style: const TextStyle(fontSize: 13, color: _textSecondary)),
+        if (isDropdown) const SizedBox(width: 4),
+        if (isDropdown) const Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary, size: 18),
+      ]),
+    );
+  }
+
+  Widget _prefDropdown(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(children: [
+        Text(label, style: const TextStyle(fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w500)),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: _card2,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(value, style: const TextStyle(fontSize: 12, color: _textSecondary, fontWeight: FontWeight.w500)),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary, size: 14),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _dataCard() {
+    return Container(
+      decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16)),
+      child: Column(children: [
+        _dataRow('Export data', const Color(0xFFEEEEEE), isFirst: true),
+        _dividerLine(),
+        _dataRow('Privacy controls', const Color(0xFFEEEEEE)),
+        _dividerLine(),
+        _dataRow('Clear all data', const Color(0xFFDC2626), isLast: true),
+      ]),
+    );
+  }
+
+  Widget _dataRow(String label, Color color, {bool isFirst = false, bool isLast = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Row(children: [
+        Text(label, style: TextStyle(fontSize: 14, color: color, fontWeight: FontWeight.w500)),
+        const Spacer(),
+        Icon(Icons.chevron_right_rounded, color: _textSecondary, size: 18),
+      ]),
+    );
+  }
+
+  Widget _dividerLine() => Container(height: 1, color: _divider, margin: const EdgeInsets.symmetric(horizontal: 16));
+
+  Widget _sectionLabel(String t) => Text(t,
+    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _textSecondary, letterSpacing: 1.2));
 }

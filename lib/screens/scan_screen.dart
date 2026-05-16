@@ -7,51 +7,35 @@ import 'result_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
-
   @override
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateMixin {
+class _ScanScreenState extends State<ScanScreen> {
+  final List<String?> _images = [null, null, null];
+  final _notesCtrl = TextEditingController();
   bool _analyzing = false;
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnim;
+  double _sliderValue = 0.5;
 
   @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
-    _pulseAnim = Tween(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-  }
+  void dispose() { _notesCtrl.dispose(); super.dispose(); }
 
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pick(ImageSource source, [int slot = 0]) async {
     try {
-      final picker = ImagePicker();
-      final file = await picker.pickImage(source: source, imageQuality: 85);
-      if (file == null || !mounted) return;
-      await _runAnalysis();
-    } catch (_) {
-      await _runAnalysis();
-    }
+      final file = await ImagePicker().pickImage(source: source, imageQuality: 85);
+      if (file != null && mounted) {
+        final empty = _images.indexWhere((e) => e == null);
+        if (empty != -1) setState(() => _images[empty] = file.path);
+      }
+    } catch (_) {}
   }
 
-  Future<void> _runAnalysis() async {
+  Future<void> _diagnose() async {
     setState(() => _analyzing = true);
-    await Future.delayed(const Duration(milliseconds: 3200));
+    await Future.delayed(const Duration(milliseconds: 3500));
     if (!mounted) return;
     setState(() => _analyzing = false);
-
-    final rand = Random();
-    final disease = mockDiseases[rand.nextInt(mockDiseases.length - 1)];
-
+    final disease = mockDiseases[Random().nextInt(mockDiseases.length - 1)];
     Navigator.push(context, MaterialPageRoute(builder: (_) => ResultScreen(disease: disease)));
   }
 
@@ -59,100 +43,221 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        title: const Text('AI Disease Scan'),
-        backgroundColor: AppColors.primary,
+      body: SafeArea(
+        child: _analyzing ? _buildAnalyzing() : _buildContent(),
       ),
-      body: _analyzing ? _buildAnalyzing() : _buildScanner(),
     );
   }
 
-  Widget _buildScanner() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+  Widget _buildContent() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+      children: [
+        const Text('AI Scan', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+        const SizedBox(height: 2),
+        const Text('Diagnose plant disease in seconds', style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+        const SizedBox(height: 20),
+        _uploadCard(),
+        const SizedBox(height: 24),
+        _sectionLabel('HEALTHY VS DISEASED'),
+        const SizedBox(height: 12),
+        _comparisonCard(),
+      ],
+    );
+  }
+
+  Widget _uploadCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 10, offset: const Offset(0, 2))],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
-          _buildScanArea(),
-          const SizedBox(height: 32),
-          const Text('How to get the best results',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
-          _tip(Icons.light_mode_rounded, 'Good lighting', 'Scan in natural daylight, avoid shadows on the leaf'),
-          _tip(Icons.center_focus_strong_rounded, 'Close-up focus', 'Fill the frame with the affected leaf area'),
-          _tip(Icons.multiple_stop_rounded, 'Multiple angles', 'Take 2–3 photos for better accuracy'),
+          Row(
+            children: List.generate(3, (i) => Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: i < 2 ? 10 : 0),
+                child: GestureDetector(
+                  onTap: () => _pick(ImageSource.gallery, i),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: _images[i] != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Icon(Icons.image_rounded, size: 32, color: AppColors.accent),
+                          )
+                        : const Icon(Icons.image_outlined, size: 32, color: Color(0xFFBBBBBB)),
+                    ),
+                  ),
+                ),
+              ),
+            )),
+          ),
+          const SizedBox(height: 12),
+          const Text('Add up to 3 angles for the best accuracy.',
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _pick(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                  label: const Text('Camera'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _pick(ImageSource.gallery),
+                  icon: const Icon(Icons.image_outlined, size: 18),
+                  label: const Text('Upload'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.bg,
+                    foregroundColor: AppColors.textPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _notesCtrl,
+            maxLines: 2,
+            decoration: InputDecoration(
+              hintText: 'Optional notes (e.g. yellowing started 3 days ago)',
+              hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              filled: true,
+              fillColor: AppColors.bg,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _diagnose,
+              icon: const Icon(Icons.auto_awesome, size: 18),
+              label: const Text('Diagnose with AI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                elevation: 0,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildScanArea() {
-    return Column(
-      children: [
-        ScaleTransition(
-          scale: _pulseAnim,
-          child: Container(
-            width: double.infinity,
-            height: 240,
-            decoration: BoxDecoration(
-              color: AppColors.accentLight,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.accent.withValues(alpha: 0.4), width: 2),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 80, height: 80,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(24),
+  Widget _comparisonCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: AppColors.cardShadow, blurRadius: 10, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            child: SizedBox(
+              height: 200,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFD4A574), Color(0xFFE8B88A)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                    ),
                   ),
-                  child: const Icon(Icons.document_scanner_rounded, size: 42, color: AppColors.primary),
-                ),
-                const SizedBox(height: 16),
-                const Text('Scan a paddy leaf', style: TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                const SizedBox(height: 6),
-                const Text('Take a photo or upload from gallery',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-              ],
+                  Positioned.fill(
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: _sliderValue,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF95D5A8), Color(0xFFB7E4C7)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 16, bottom: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
+                      child: const Text('Healthy', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                    ),
+                  ),
+                  Positioned(
+                    right: 16, bottom: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(color: AppColors.red, borderRadius: BorderRadius.circular(20)),
+                      child: const Text('Diseased', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _pickImage(ImageSource.camera),
-                icon: const Icon(Icons.camera_alt_rounded),
-                label: const Text('Camera'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 4,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+                activeTrackColor: AppColors.primary,
+                inactiveTrackColor: AppColors.bg,
+                thumbColor: AppColors.primary,
+                overlayColor: AppColors.primary.withValues(alpha: 0.1),
+              ),
+              child: Slider(
+                value: _sliderValue,
+                onChanged: (v) => setState(() => _sliderValue = v),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _pickImage(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library_rounded),
-                label: const Text('Gallery'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary, width: 1.5),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+          ),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 14),
+            child: Text('Drag to compare visual cues',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -164,118 +269,39 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _PulsingRing(),
-            const SizedBox(height: 40),
-            const Text('Analysing your crop...', style: TextStyle(
-              fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
-            const SizedBox(height: 10),
-            const Text('Our AI is scanning for 50+ rice diseases.\nThis takes just a moment.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5)),
-            const SizedBox(height: 40),
-            _AnalyzingStep('Loading disease database', true),
-            const SizedBox(height: 10),
-            _AnalyzingStep('Detecting leaf features', true),
-            const SizedBox(height: 10),
-            _AnalyzingStep('Running AI classification...', false),
+            const SizedBox(height: 32),
+            const Text('Analysing your crop...', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.3)),
+            const SizedBox(height: 8),
+            const Text('AI is scanning for 50+ rice diseases', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
           ],
         ),
       ),
     );
   }
 
-  Widget _tip(IconData icon, String title, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: AppColors.accentLight, borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-            ],
-          )),
-        ],
-      ),
-    );
-  }
+  Widget _sectionLabel(String t) => Text(t, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary, letterSpacing: 1.2));
 }
 
 class _PulsingRing extends StatefulWidget {
   @override
   State<_PulsingRing> createState() => _PulsingRingState();
 }
-
 class _PulsingRingState extends State<_PulsingRing> with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _anim;
-
+  late AnimationController _c;
+  late Animation<double> _a;
   @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
-    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
-  }
-
+  void initState() { super.initState(); _c = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(); _a = CurvedAnimation(parent: _c, curve: Curves.easeInOut); }
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
+  void dispose() { _c.dispose(); super.dispose(); }
   @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) => Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 120 + (_anim.value * 40),
-            height: 120 + (_anim.value * 40),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.accent.withValues(alpha: 0.05 + (0.1 * (1 - _anim.value))),
-            ),
-          ),
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.accentLight,
-            ),
-            child: const Icon(Icons.biotech_rounded, size: 48, color: AppColors.primary),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AnalyzingStep extends StatelessWidget {
-  final String label;
-  final bool done;
-  const _AnalyzingStep(this.label, this.done);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        done
-          ? const Icon(Icons.check_circle_rounded, color: AppColors.accent, size: 18)
-          : const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(
-              strokeWidth: 2, color: AppColors.primary)),
-        const SizedBox(width: 10),
-        Text(label, style: TextStyle(
-          fontSize: 13,
-          color: done ? AppColors.textSecondary : AppColors.textPrimary,
-          fontWeight: done ? FontWeight.w400 : FontWeight.w600,
-        )),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _a,
+    builder: (_, __) => Stack(alignment: Alignment.center, children: [
+      Container(width: 100 + _a.value * 40, height: 100 + _a.value * 40,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.accent.withValues(alpha: 0.08 * (1 - _a.value)))),
+      Container(width: 90, height: 90,
+        decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.accentLight),
+        child: const Icon(Icons.biotech_rounded, size: 44, color: AppColors.primary)),
+    ]),
+  );
 }
