@@ -25,7 +25,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _sectionLabel('TODAY\'S DISEASE RISK'),
             const SizedBox(height: 12),
-            _DiseaseRiskCard(),
+            _DiseaseRiskCard(score: 30),
             const SizedBox(height: 16),
             _ScanBanner(onTap: onScanTap),
             const SizedBox(height: 24),
@@ -56,10 +56,10 @@ class HomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Good afternoon, Farmer',
+        const Text('Good morning, Farmer',
           style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w400)),
         const SizedBox(height: 3),
-        const Text('My Paddy Farm',
+        const Text('Your Farm',
           style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.8)),
       ],
     );
@@ -183,6 +183,15 @@ class _GlanceCard extends StatelessWidget {
 }
 
 class _DiseaseRiskCard extends StatelessWidget {
+  final int score;
+  const _DiseaseRiskCard({required this.score});
+
+  String get _label {
+    if (score < 30) return 'Low';
+    if (score < 65) return 'Moderate';
+    return 'High';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -203,15 +212,15 @@ class _DiseaseRiskCard extends StatelessWidget {
                     const Text('Weather-derived',
                       style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     const SizedBox(height: 4),
-                    const Text('Moderate',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
+                    Text(_label,
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5)),
                     const SizedBox(height: 2),
-                    const Text('Score 50/100',
+                    Text('Score $score/100',
                       style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                   ],
                 ),
               ),
-              _RiskDial(score: 50),
+              _RiskDial(score: score),
             ],
           ),
           const SizedBox(height: 16),
