@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../theme.dart';
 import '../models/field.dart';
 import '../transitions.dart';
@@ -77,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen>
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    Text('${_greeting()}, ${FirebaseAuth.instance.currentUser?.displayName ?? 'Farmer'}',
+                    Text('${_greeting()}, Farmer',
                         style: TextStyle(
                             fontSize: 14, color: context.textSecondary)),
                     const SizedBox(height: 2),

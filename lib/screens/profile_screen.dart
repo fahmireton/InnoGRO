@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../app_theme_notifier.dart';
 import '../theme.dart';
-import '../services/auth_service.dart';
 import '../models/field.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -16,42 +13,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _region = 'Malaysia';
   String _units = 'Metric';
   String _language = 'English';
-  bool _signingOut = false;
 
-  User? get _user => FirebaseAuth.instance.currentUser;
-  String get _displayName => _user?.displayName ?? 'Farmer';
-  String get _email => _user?.email ?? '';
-  String get _initials {
-    final name = _displayName;
-    if (name.isEmpty) return 'F';
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    return name[0].toUpperCase();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    final data = await AuthService.getUserData();
-    if (mounted && data != null) {
-      setState(() => _region = data['region'] ?? 'Malaysia');
-    }
-  }
-
-  Future<void> _updateRegion(String newRegion) async {
-    setState(() => _region = newRegion);
-    final uid = _user?.uid;
-    if (uid != null) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .update({'region': newRegion});
-    }
-  }
+  static const String _displayName = 'Farmer';
+  static const String _email = 'farmer@visiongro.app';
+  static const String _initials = 'F';
 
   void _showRegionSheet() {
     final regions = ['Selangor', 'Kedah', 'Perak', 'Johor', 'Sabah', 'Sarawak', 'Malaysia'];
@@ -88,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: AppColors.primary, size: 20)
                     : null,
                 onTap: () {
-                  _updateRegion(r);
+                  setState(() => _region = r);
                   Navigator.pop(ctx);
                 },
               )),
@@ -301,8 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text('Cancel',
-                style:
-                    TextStyle(color: ctx.textSecondary)),
+                style: TextStyle(color: ctx.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -394,24 +358,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ]);
   }
 
-  Future<void> _signOut() async {
-    setState(() => _signingOut = true);
-    try {
-      await AuthService.signOut();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Sign out failed: $e'),
-          backgroundColor: AppColors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
-      }
-    } finally {
-      if (mounted) setState(() => _signingOut = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -435,7 +381,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Avatar + user info card
             _card(context,
                 child: Row(children: [
-                  // Avatar gradient circle
                   Container(
                     width: 64,
                     height: 64,
@@ -450,10 +395,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         end: Alignment.bottomRight,
                       ),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Text(
                         _initials,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
                             color: Colors.white),
@@ -551,10 +496,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _sectionLabel(context, 'PREFERENCES'),
             const SizedBox(height: 10),
 
-            // Preferences card
             _card(context,
                 child: Column(children: [
-                  // Region
                   GestureDetector(
                     onTap: _showRegionSheet,
                     child: _prefRow(
@@ -575,7 +518,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   _divLine(context),
-                  // Theme toggle
                   _prefRow(
                     context,
                     label: 'Theme',
@@ -620,7 +562,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   _divLine(context),
-                  // Units
                   GestureDetector(
                     onTap: _showUnitsSheet,
                     child: _prefRow(
@@ -648,7 +589,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   _divLine(context),
-                  // Language
                   GestureDetector(
                     onTap: _showLanguageSheet,
                     child: _prefRow(
@@ -681,7 +621,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _sectionLabel(context, 'DATA'),
             const SizedBox(height: 10),
 
-            // Data card
             _card(context,
                 child: Column(children: [
                   _dataRow(context, 'Export data', context.textPrimary,
@@ -693,39 +632,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _dataRow(context, 'Clear all data', AppColors.red,
                       _showClearDataDialog),
                 ])),
-
-            const SizedBox(height: 24),
-
-            // Sign out button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _signingOut ? null : _signOut,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: const BorderSide(color: AppColors.red),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-                icon: _signingOut
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.red))
-                    : const Icon(Icons.logout_rounded,
-                        color: AppColors.red, size: 20),
-                label: Text(
-                  'Sign Out',
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: _signingOut
-                          ? AppColors.red.withValues(alpha: 0.5)
-                          : AppColors.red),
-                ),
-              ),
-            ),
 
             const SizedBox(height: 24),
             Center(
