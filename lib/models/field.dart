@@ -1,6 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-// 6 stages matching the source exactly
 enum GrowthStage { seedling, vegetative, tillering, flowering, ripening, harvest }
 
 extension GrowthStageX on GrowthStage {
@@ -66,6 +66,15 @@ extension GrowthStageX on GrowthStage {
     GrowthStage.ripening: 0.82,
     GrowthStage.harvest: 1.0,
   }[this]!;
+
+  Color get color => const {
+    GrowthStage.seedling: Color(0xFF81C784),
+    GrowthStage.vegetative: Color(0xFF4CAF50),
+    GrowthStage.tillering: Color(0xFF2E7D32),
+    GrowthStage.flowering: Color(0xFFCE93D8),
+    GrowthStage.ripening: Color(0xFFF9A825),
+    GrowthStage.harvest: Color(0xFFE65100),
+  }[this]!;
 }
 
 enum HealthStatus { healthy, watch, critical }
@@ -89,7 +98,6 @@ extension HealthStatusX on HealthStatus {
     HealthStatus.critical: Color(0xFFFEE2E2),
   }[this]!;
 
-  // Gradient colors for field card header
   Color get gradientStart => const {
     HealthStatus.healthy: Color(0xFF1E8C58),
     HealthStatus.watch: Color(0xFFCC7A08),
@@ -114,6 +122,22 @@ class ScanRecord {
     required this.date,
     required this.confidence,
   });
+
+  Map<String, dynamic> toMap() => {
+    'diseaseName': diseaseName,
+    'severity': severity,
+    'date': Timestamp.fromDate(date),
+    'confidence': confidence,
+  };
+
+  factory ScanRecord.fromMap(Map<String, dynamic> m) => ScanRecord(
+    diseaseName: m['diseaseName'] ?? '',
+    severity: m['severity'] ?? '',
+    date: m['date'] is Timestamp
+        ? (m['date'] as Timestamp).toDate()
+        : DateTime.now(),
+    confidence: (m['confidence'] ?? 0).toDouble(),
+  );
 }
 
 class PaddyField {
@@ -132,6 +156,7 @@ class PaddyField {
   String variety;
   double? latitude;
   double? longitude;
+  String? photoUrl;
 
   PaddyField({
     required this.id,
@@ -149,58 +174,49 @@ class PaddyField {
     required this.variety,
     this.latitude,
     this.longitude,
+    this.photoUrl,
   });
-}
 
-List<PaddyField> sampleFields = [
-  PaddyField(
-    id: '1',
-    name: 'Sawah Utara',
-    location: 'Kedah, Malaysia',
-    areaMorgen: 2.5,
-    stage: GrowthStage.tillering,
-    healthStatus: HealthStatus.watch,
-    waterLevel: 72,
-    fertilizerLevel: 55,
-    healthScore: 74,
-    plantedDate: DateTime.now().subtract(const Duration(days: 32)),
-    activityLog: [
-      'Applied urea fertiliser (60kg/ha)',
-      'Water level adjusted to 5cm',
-      'Planted certified MR219 seeds',
-    ],
-    scanHistory: [
-      ScanRecord(
-        diseaseName: 'Brown Spot',
-        severity: 'Medium',
-        date: DateTime.now().subtract(const Duration(days: 5)),
-        confidence: 89.7,
-      ),
-    ],
-    variety: 'MR219',
-    latitude: 6.1184,
-    longitude: 100.3685,
-  ),
-  PaddyField(
-    id: '2',
-    name: 'Sawah Selatan',
-    location: 'Kedah, Malaysia',
-    areaMorgen: 1.8,
-    stage: GrowthStage.ripening,
-    healthStatus: HealthStatus.healthy,
-    waterLevel: 80,
-    fertilizerLevel: 75,
-    healthScore: 91,
-    plantedDate: DateTime.now().subtract(const Duration(days: 58)),
-    activityLog: [
-      'Pest check — all clear',
-      'Applied potassium supplement',
-      'Irrigation system checked',
-      'Planted MR263 variety',
-    ],
-    scanHistory: [],
-    variety: 'MR263',
-    latitude: 6.1100,
-    longitude: 100.3600,
-  ),
-];
+  Map<String, dynamic> toMap() => {
+    'name': name,
+    'location': location,
+    'areaMorgen': areaMorgen,
+    'stage': stage.index,
+    'healthStatus': healthStatus.index,
+    'waterLevel': waterLevel,
+    'fertilizerLevel': fertilizerLevel,
+    'healthScore': healthScore,
+    'plantedDate': Timestamp.fromDate(plantedDate),
+    'activityLog': activityLog,
+    'scanHistory': scanHistory.map((r) => r.toMap()).toList(),
+    'variety': variety,
+    'latitude': latitude,
+    'longitude': longitude,
+    'photoUrl': photoUrl,
+  };
+
+  factory PaddyField.fromMap(String id, Map<String, dynamic> m) => PaddyField(
+    id: id,
+    name: m['name'] ?? '',
+    location: m['location'] ?? '',
+    areaMorgen: (m['areaMorgen'] ?? 1.0).toDouble(),
+    stage: GrowthStage.values[
+        (m['stage'] as int? ?? 0).clamp(0, GrowthStage.values.length - 1)],
+    healthStatus: HealthStatus.values[
+        (m['healthStatus'] as int? ?? 0).clamp(0, HealthStatus.values.length - 1)],
+    waterLevel: m['waterLevel'] ?? 50,
+    fertilizerLevel: m['fertilizerLevel'] ?? 50,
+    healthScore: m['healthScore'] ?? 80,
+    plantedDate: m['plantedDate'] is Timestamp
+        ? (m['plantedDate'] as Timestamp).toDate()
+        : DateTime.now(),
+    activityLog: List<String>.from(m['activityLog'] ?? []),
+    scanHistory: (m['scanHistory'] as List<dynamic>? ?? [])
+        .map((r) => ScanRecord.fromMap(r as Map<String, dynamic>))
+        .toList(),
+    variety: m['variety'] ?? 'MR219',
+    latitude: (m['latitude'] as num?)?.toDouble(),
+    longitude: (m['longitude'] as num?)?.toDouble(),
+    photoUrl: m['photoUrl'] as String?,
+  );
+}

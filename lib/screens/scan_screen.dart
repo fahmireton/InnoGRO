@@ -1,8 +1,12 @@
+import 'dart:io';
+import 'dart:async';
 import 'dart:math';
+import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
-import '../models/disease.dart';
+import '../services/scan_service.dart';
 import 'result_screen.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -12,10 +16,18 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateMixin {
-  final List<String?> _images = [null, null, null];
+  final List<XFile?> _images = [null, null, null];
   bool _analyzing = false;
   double _sliderValue = 0.5;
+  int _analyzeStep = 0;
+  Timer? _stepTimer;
   late AnimationController _rotCtrl;
+
+  static const _analyzeMessages = [
+    'Uploading your image…',
+    'Analysing with AI…',
+    'Preparing diagnosis results…',
+  ];
 
   @override
   void initState() {
@@ -26,6 +38,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
+    _stepTimer?.cancel();
     _rotCtrl.dispose();
     super.dispose();
   }
@@ -35,18 +48,51 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       final file = await ImagePicker().pickImage(source: source, imageQuality: 85);
       if (file != null && mounted) {
         final empty = _images.indexWhere((e) => e == null);
-        if (empty != -1) setState(() => _images[empty] = file.path);
+        final idx = empty != -1 ? empty : 0;
+        setState(() => _images[idx] = file);
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Could not open image picker. Try again.'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
   }
 
   Future<void> _diagnose() async {
-    setState(() => _analyzing = true);
-    await Future.delayed(const Duration(milliseconds: 3500));
-    if (!mounted) return;
-    setState(() => _analyzing = false);
-    final disease = mockDiseases[Random().nextInt(mockDiseases.length - 1)];
-    Navigator.push(context, MaterialPageRoute(builder: (_) => ResultScreen(disease: disease)));
+    final xfiles = _images.whereType<XFile>().toList();
+    if (xfiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Please add at least one photo first.'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+      return;
+    }
+    setState(() { _analyzing = true; _analyzeStep = 0; });
+    _stepTimer = Timer.periodic(const Duration(milliseconds: 1600), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() { if (_analyzeStep < 2) _analyzeStep++; });
+    });
+    try {
+      final disease = await ScanService.analyzeXFiles(xfiles);
+      _stepTimer?.cancel();
+      if (!mounted) return;
+      setState(() => _analyzing = false);
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => ResultScreen(disease: disease, images: xfiles)));
+      if (mounted) setState(() => _images.fillRange(0, 3, null));
+    } catch (e) {
+      _stepTimer?.cancel();
+      if (!mounted) return;
+      setState(() => _analyzing = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Analysis failed: $e'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+    }
   }
 
   @override
@@ -63,9 +109,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   Widget _buildContent(BuildContext context) {
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+        padding: const EdgeInsets.fromLTRB(20, 32, 20, 120),
         children: [
-          Text('AI Scan',
+          Text('PaddyIntelligence',
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800,
               color: context.textPrimary, letterSpacing: -0.5)),
           const SizedBox(height: 2),
@@ -78,7 +124,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
               color: context.textSecondary, letterSpacing: 1.2)),
           const SizedBox(height: 12),
-          _comparisonCard(context),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _comparisonCard(context),
+          ),
         ],
       ),
     );
@@ -105,21 +154,60 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
               child: Padding(
                 padding: EdgeInsets.only(right: i < 2 ? 8 : 0),
                 child: GestureDetector(
-                  onTap: () => _pick(ImageSource.gallery),
+                  onTap: () => _showPickerSheet(i),
                   child: AspectRatio(
                     aspectRatio: 1,
                     child: Container(
                       decoration: BoxDecoration(
                         color: context.secondary,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _images[i] != null
+                            ? AppColors.accent.withValues(alpha: 0.5)
+                            : context.border.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: _images[i] != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Icon(Icons.image_rounded, size: 32, color: AppColors.accent),
-                          )
-                        : Icon(Icons.image_outlined, size: 32,
-                            color: context.textSecondary.withValues(alpha: 0.5)),
+                        ? Stack(children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(11),
+                              child: kIsWeb
+                                ? Image.network(
+                                    _images[i]!.path,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 32),
+                                  )
+                                : Image.file(
+                                    File(_images[i]!.path),
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  ),
+                            ),
+                            Positioned(
+                              top: 4, right: 4,
+                              child: GestureDetector(
+                                onTap: () => setState(() => _images[i] = null),
+                                child: Container(
+                                  width: 20, height: 20,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4)],
+                                  ),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 12),
+                                ),
+                              ),
+                            ),
+                          ])
+                        : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(Icons.add_photo_alternate_outlined, size: 28,
+                                color: context.textSecondary.withValues(alpha: 0.5)),
+                            const SizedBox(height: 4),
+                            Text('Photo ${i + 1}', style: TextStyle(fontSize: 10, color: context.textSecondary.withValues(alpha: 0.5))),
+                          ]),
                     ),
                   ),
                 ),
@@ -171,14 +259,17 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
           const SizedBox(height: 14),
           // Diagnose button — solid primary, rounded-full
           GestureDetector(
-            onTap: _diagnose,
-            child: Container(
+            onTap: _images.every((e) => e == null) ? null : _diagnose,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: _images.every((e) => e == null)
+                    ? AppColors.primary.withValues(alpha: 0.5)
+                    : AppColors.primary,
                 borderRadius: BorderRadius.circular(30),
-                boxShadow: [
+                boxShadow: _images.every((e) => e == null) ? [] : [
                   BoxShadow(color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 16, offset: const Offset(0, 4)),
                 ],
@@ -194,6 +285,79 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
         ],
       ),
     );
+  }
+
+  void _showPickerSheet(int slot) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: context.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Add Photo', style: TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w700, color: context.textPrimary)),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              ),
+              title: Text('Take Photo', style: TextStyle(
+                fontWeight: FontWeight.w600, color: context.textPrimary)),
+              subtitle: Text('Use camera', style: TextStyle(
+                fontSize: 12, color: context.textSecondary)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickSlot(slot, ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.photo_library_outlined, color: AppColors.accent),
+              ),
+              title: Text('Choose from Gallery', style: TextStyle(
+                fontWeight: FontWeight.w600, color: context.textPrimary)),
+              subtitle: Text('Select from photos', style: TextStyle(
+                fontSize: 12, color: context.textSecondary)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickSlot(slot, ImageSource.gallery);
+              },
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickSlot(int slot, ImageSource source) async {
+    try {
+      final file = await ImagePicker().pickImage(source: source, imageQuality: 85);
+      if (file != null && mounted) {
+        setState(() => _images[slot] = file);
+      }
+    } catch (_) {}
   }
 
   Widget _comparisonCard(BuildContext context) {
@@ -219,7 +383,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 // Diseased paddy — full background
                 SizedBox(
                   width: w, height: 210,
-                  child: Image.asset('assets/images/paddy_diseased.png', fit: BoxFit.cover),
+                  child: Image.asset('assets/images/paddy_diseased2.png', fit: BoxFit.cover),
                 ),
                 // Healthy paddy — clipped to left slider fraction
                 ClipRect(
@@ -239,21 +403,11 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
                 Positioned(
                   left: w * _sliderValue - 1,
                   top: 0, bottom: 0,
-                  child: Container(width: 2, color: Colors.white),
-                ),
-                // Handle circle on divider
-                Positioned(
-                  left: w * _sliderValue - 16,
-                  top: 0, bottom: 0,
-                  child: Center(
-                    child: Container(
-                      width: 32, height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 6)],
-                      ),
-                      child: const Icon(Icons.compare_arrows_rounded, size: 18, color: AppColors.primary),
+                  child: Container(
+                    width: 2,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4)],
                     ),
                   ),
                 ),
@@ -355,35 +509,147 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
   Widget _buildAnalyzing() {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withValues(alpha: 0.4),
-        child: Center(
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            // Rotating scan icon in circle
-            AnimatedBuilder(
-              animation: _rotCtrl,
-              builder: (_, child) => Transform.rotate(
-                angle: _rotCtrl.value * 2 * pi,
-                child: child,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withValues(alpha: 0.85),
+              AppColors.primary.withValues(alpha: 0.6),
+            ],
+          ),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Center(
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              // Pulsing + Rotating scan icon
+              AnimatedBuilder(
+                animation: _rotCtrl,
+                builder: (_, child) {
+                  final pulseScale = 1.0 + (sin(_rotCtrl.value * 4 * pi) * 0.1);
+                  return Transform.scale(
+                    scale: pulseScale,
+                    child: Transform.rotate(
+                      angle: _rotCtrl.value * 2 * pi,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                            colors: [
+                              AppColors.accent,
+                              AppColors.primary,
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.accent.withValues(alpha: 0.6),
+                              blurRadius: 30,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.document_scanner_rounded,
+                          color: Colors.white,
+                          size: 44,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-              child: Container(
-                width: 80, height: 80,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
+              const SizedBox(height: 32),
+              // Step message with fade animation
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.1),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
                 ),
-                child: const Icon(Icons.document_scanner_rounded,
-                  color: Colors.white, size: 36),
+                child: Text(
+                  _analyzeMessages[_analyzeStep],
+                  key: ValueKey(_analyzeStep),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 28),
-            const Text('Analysing your crop...',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-                color: Colors.white, letterSpacing: -0.3)),
-            const SizedBox(height: 8),
-            const Text('AI scanning for 50+ rice diseases',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.white70)),
-          ]),
+              const SizedBox(height: 12),
+              // Subtitle
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 14,
+                      color: AppColors.accent,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'AI-powered paddy disease diagnosis',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+              // Progress dots with glow
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(3, (i) {
+                  final isActive = i == _analyzeStep;
+                  final isDone = i < _analyzeStep;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: isActive ? 32 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isDone || isActive
+                          ? AppColors.accent
+                          : Colors.white.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: (isDone || isActive)
+                          ? [
+                              BoxShadow(
+                                color: AppColors.accent.withValues(alpha: 0.6),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : null,
+                    ),
+                  );
+                }),
+              ),
+            ]),
+          ),
         ),
       ),
     );

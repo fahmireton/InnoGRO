@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../app_theme_notifier.dart';
 import '../theme.dart';
-import '../models/field.dart';
+import '../models/user_profile.dart';
+import '../services/auth_service.dart';
+import 'login_screen_new.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -10,16 +13,66 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _region = 'Malaysia';
+  final _authService = AuthService();
+  UserProfile? _userProfile;
+  bool _loading = true;
+
+  String _region = 'Selangor';
   String _units = 'Metric';
   String _language = 'English';
 
-  static const String _displayName = 'Farmer';
-  static const String _email = 'farmer@visiongro.app';
-  static const String _initials = 'F';
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final profile = await _authService.getUserProfile(user.uid);
+      if (mounted) setState(() { _userProfile = profile; _loading = false; });
+    } else {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _signOut() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.card,
+        title: Text('Sign Out', style: TextStyle(color: context.textPrimary)),
+        content: Text(
+          'Are you sure you want to sign out?',
+          style: TextStyle(color: context.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: context.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _authService.signOut();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
 
   void _showRegionSheet() {
-    final regions = ['Selangor', 'Kedah', 'Perak', 'Johor', 'Sabah', 'Sarawak', 'Malaysia'];
+    final regions = ['Selangor', 'Kedah', 'Perak', 'Johor', 'Sabah', 'Sarawak'];
     showModalBottomSheet(
       context: context,
       backgroundColor: context.card,
@@ -266,7 +319,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text('Cancel',
-                style: TextStyle(color: ctx.textSecondary)),
+                style:
+                    TextStyle(color: ctx.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -293,41 +347,224 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _showEditProfileSheet() async {
+    if (_userProfile == null) return;
+    final nameCtrl = TextEditingController(text: _userProfile!.name);
+    final farmCtrl = TextEditingController(text: _userProfile!.farmName);
+    final locCtrl = TextEditingController(text: _userProfile!.location);
+    // Capture before entering the bottom sheet to avoid stale-context crashes
+    final messenger = ScaffoldMessenger.of(context);
+    bool saving = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx, setS) => Padding(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom),
+          child: Container(
+            decoration: BoxDecoration(
+              color: sheetCtx.card,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: sheetCtx.border,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: 20),
+              Text('Edit Profile',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: sheetCtx.textPrimary)),
+              const SizedBox(height: 20),
+              _editField(sheetCtx, nameCtrl, 'Your Name', Icons.person_outline_rounded),
+              const SizedBox(height: 12),
+              _editField(sheetCtx, farmCtrl, 'Farm Name', Icons.agriculture_rounded),
+              const SizedBox(height: 12),
+              _editField(sheetCtx, locCtrl, 'Location', Icons.location_on_outlined),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          setS(() => saving = true);
+                          final nav = Navigator.of(sheetCtx);
+                          try {
+                            final updated = UserProfile(
+                              uid: _userProfile!.uid,
+                              email: _userProfile!.email,
+                              name: nameCtrl.text.trim(),
+                              farmName: farmCtrl.text.trim(),
+                              location: locCtrl.text.trim(),
+                              latitude: _userProfile!.latitude,
+                              longitude: _userProfile!.longitude,
+                              createdAt: _userProfile!.createdAt,
+                            );
+                            await _authService.updateProfile(updated);
+                            if (mounted) setState(() => _userProfile = updated);
+                            nav.pop();
+                            messenger.showSnackBar(SnackBar(
+                              content: const Text('Profile updated'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ));
+                          } catch (e) {
+                            if (mounted) setS(() => saving = false);
+                            messenger.showSnackBar(SnackBar(
+                              content: Text(e.toString()),
+                              backgroundColor: AppColors.red,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ));
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: saving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : const Text('Save Changes',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+
+    nameCtrl.dispose();
+    farmCtrl.dispose();
+    locCtrl.dispose();
+  }
+
+  Widget _editField(BuildContext ctx, TextEditingController ctrl,
+      String label, IconData icon) {
+    return TextField(
+      controller: ctrl,
+      style: TextStyle(color: ctx.textPrimary, fontSize: 15),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: ctx.textSecondary, fontSize: 13),
+        prefixIcon: Icon(icon, color: ctx.textSecondary, size: 20),
+        filled: true,
+        fillColor: ctx.secondary,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide:
+                const BorderSide(color: AppColors.primary, width: 1.5)),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      ),
+    );
+  }
+
   void _showUpgradeDialog() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: ctx.card,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('VisionGRO Premium',
-            style: TextStyle(
-                fontWeight: FontWeight.w800, color: ctx.textPrimary)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          _premiumFeature(ctx, Icons.document_scanner_rounded,
-              'Unlimited AI Scans',
-              'No cap on daily diagnoses'),
-          const SizedBox(height: 12),
-          _premiumFeature(ctx, Icons.people_rounded,
-              'Expert Consultation',
-              'Direct access to MARDI agronomists'),
-          const SizedBox(height: 12),
-          _premiumFeature(ctx, Icons.flash_on_rounded,
-              'Priority Support',
-              'Faster response times, 24/7'),
-        ]),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Coming Soon'),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: ctx.card,
+            borderRadius: BorderRadius.circular(28),
           ),
-        ],
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            // Header badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppColors.primary, AppColors.accent]),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text('PREMIUM', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+            ),
+            const SizedBox(height: 14),
+            Text('VisionGRO Premium', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: ctx.textPrimary, letterSpacing: -0.5)),
+            const SizedBox(height: 6),
+            // Price
+            Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('RM', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: ctx.textSecondary)),
+              const SizedBox(width: 2),
+              Text('10', style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: AppColors.primary, letterSpacing: -2, height: 1)),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text('/month', style: TextStyle(fontSize: 14, color: ctx.textSecondary)),
+              ),
+            ]),
+            const SizedBox(height: 4),
+            Text('Cancel anytime · No hidden fees', style: TextStyle(fontSize: 12, color: ctx.textSecondary)),
+            const SizedBox(height: 20),
+            // Feature list
+            _premiumFeature(ctx, Icons.document_scanner_rounded, 'Unlimited AI Scans', 'No daily cap — diagnose all day'),
+            const SizedBox(height: 12),
+            _premiumFeature(ctx, Icons.people_rounded, 'Expert Consultation', 'Direct booking with MARDI agronomists'),
+            const SizedBox(height: 12),
+            _premiumFeature(ctx, Icons.map_rounded, 'Advanced Disease Map', 'Field-level outbreak alerts'),
+            const SizedBox(height: 12),
+            _premiumFeature(ctx, Icons.flash_on_rounded, 'Priority Support', '24/7 response, under 2 hours'),
+            const SizedBox(height: 12),
+            _premiumFeature(ctx, Icons.download_rounded, 'Export Reports', 'PDF season summaries for banks & DOA'),
+            const SizedBox(height: 24),
+            // CTA buttons
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Premium launching soon — you\'ll be notified!'),
+                    behavior: SnackBarBehavior.floating,
+                  ));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  elevation: 0,
+                ),
+                child: const Text('Notify Me at Launch', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Maybe later', style: TextStyle(fontSize: 13, color: ctx.textSecondary)),
+            ),
+          ]),
+        ),
       ),
     );
   }
@@ -360,6 +597,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: context.bg,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final userName = _userProfile?.name ?? 'Farmer';
+    final farmName = _userProfile?.farmName ?? 'My Farm';
+    final userEmail = _userProfile?.email ?? 'email@example.com';
+
     return Scaffold(
       backgroundColor: context.bg,
       body: SafeArea(
@@ -381,6 +629,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Avatar + user info card
             _card(context,
                 child: Row(children: [
+                  // Avatar gradient circle
                   Container(
                     width: 64,
                     height: 64,
@@ -395,10 +644,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         end: Alignment.bottomRight,
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        _initials,
-                        style: TextStyle(
+                        userName.isNotEmpty
+                            ? userName[0].toUpperCase()
+                            : 'F',
+                        style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
                             color: Colors.white),
@@ -410,23 +661,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                        Text(_displayName,
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                color: context.textPrimary)),
+                        Text(
+                          userName,
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: context.textPrimary),
+                        ),
                         const SizedBox(height: 2),
-                        Text(_email,
-                            style: TextStyle(
-                                fontSize: 13, color: context.textSecondary)),
+                        Text(
+                          farmName,
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: context.textSecondary),
+                        ),
                         const SizedBox(height: 2),
-                        Text('Region: $_region',
-                            style: TextStyle(
-                                fontSize: 12, color: context.textSecondary)),
-                        Text('Fields: ${sampleFields.length}',
-                            style: TextStyle(
-                                fontSize: 12, color: context.textSecondary)),
+                        Text(
+                          userEmail,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: context.textSecondary.withValues(alpha: 0.7)),
+                        ),
                       ])),
+                  GestureDetector(
+                    onTap: _showEditProfileSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentLight,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.edit_rounded, size: 13, color: AppColors.primary),
+                        SizedBox(width: 4),
+                        Text('Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                      ]),
+                    ),
+                  ),
                 ])),
 
             const SizedBox(height: 14),
@@ -496,8 +768,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _sectionLabel(context, 'PREFERENCES'),
             const SizedBox(height: 10),
 
+            // Preferences card
             _card(context,
                 child: Column(children: [
+                  // Region
                   GestureDetector(
                     onTap: _showRegionSheet,
                     child: _prefRow(
@@ -518,6 +792,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   _divLine(context),
+                  // Theme toggle
                   _prefRow(
                     context,
                     label: 'Theme',
@@ -562,6 +837,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   _divLine(context),
+                  // Units
                   GestureDetector(
                     onTap: _showUnitsSheet,
                     child: _prefRow(
@@ -589,6 +865,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   _divLine(context),
+                  // Language
                   GestureDetector(
                     onTap: _showLanguageSheet,
                     child: _prefRow(
@@ -621,6 +898,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _sectionLabel(context, 'DATA'),
             const SizedBox(height: 10),
 
+            // Data card
             _card(context,
                 child: Column(children: [
                   _dataRow(context, 'Export data', context.textPrimary,
@@ -634,6 +912,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ])),
 
             const SizedBox(height: 24),
+            // Sign Out Button
+            GestureDetector(
+              onTap: _signOut,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.logout_rounded,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Sign Out',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 32),
             Center(
               child: Text(
                   'VisionGRO · v1.0 · Made for smallholder farmers',

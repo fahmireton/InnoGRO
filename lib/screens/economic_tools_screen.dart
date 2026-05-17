@@ -305,8 +305,9 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
           const SizedBox(width: 8),
           GestureDetector(
             onTap: () {
-              if (value > step) {
-                onChange((value - step * 10).roundToDouble() / 10);
+              if (value > 0) {
+                final next = ((value - step) * 10).roundToDouble() / 10;
+                onChange(next.clamp(0.0, double.infinity));
               }
             },
             child: Container(
@@ -389,16 +390,21 @@ class _EconomicToolsScreenState extends State<EconomicToolsScreen> {
           color: context.card,
           borderRadius: BorderRadius.circular(24),
           border:
-              Border.all(color: context.border.withValues(alpha: 0.4)),
+              Border.all(color: context.border.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 2,
-                offset: const Offset(0, 1)),
+                blurRadius: 1,
+                spreadRadius: 1,
+                offset: Offset.zero),
             BoxShadow(
                 color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 24,
-                offset: const Offset(0, 8)),
+                blurRadius: 6,
+                offset: const Offset(0, 2)),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.09),
+                blurRadius: 32,
+                offset: const Offset(0, 12)),
           ],
         ),
         child: child,
@@ -436,46 +442,63 @@ class _SparklinePainter extends CustomPainter {
     final min = data.reduce((a, b) => a < b ? a : b);
     final max = data.reduce((a, b) => a > b ? a : b);
     final range = max - min;
+    final pad = size.height * 0.08;
 
     List<Offset> pts = [];
     for (int i = 0; i < data.length; i++) {
       final x = (i / (data.length - 1)) * size.width;
-      final y = size.height -
-          ((data[i] - min) / (range == 0 ? 1 : range)) * size.height;
+      final y = pad + size.height * (1 - pad * 2 / size.height) -
+          ((data[i] - min) / (range == 0 ? 1 : range)) *
+              (size.height - pad * 2);
       pts.add(Offset(x, y));
     }
 
-    // Fill area
+    // Smooth bezier fill
     final fillPath = Path()..moveTo(pts.first.dx, size.height);
-    for (final p in pts) {
-      fillPath.lineTo(p.dx, p.dy);
+    fillPath.lineTo(pts.first.dx, pts.first.dy);
+    for (int i = 1; i < pts.length; i++) {
+      final cpX = (pts[i - 1].dx + pts[i].dx) / 2;
+      fillPath.cubicTo(
+          cpX, pts[i - 1].dy, cpX, pts[i].dy, pts[i].dx, pts[i].dy);
     }
-    fillPath
-      ..lineTo(pts.last.dx, size.height)
-      ..close();
+    fillPath.lineTo(pts.last.dx, size.height);
+    fillPath.close();
 
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          AppColors.primary.withValues(alpha: 0.3),
-          AppColors.primary.withValues(alpha: 0)
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(
+        fillPath,
+        Paint()
+          ..shader = LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: 0.28),
+              AppColors.primary.withValues(alpha: 0.0),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)));
 
-    // Line
-    final linePaint = Paint()
-      ..color = AppColors.primary
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+    // Smooth bezier line
     final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
     for (int i = 1; i < pts.length; i++) {
-      linePath.lineTo(pts[i].dx, pts[i].dy);
+      final cpX = (pts[i - 1].dx + pts[i].dx) / 2;
+      linePath.cubicTo(
+          cpX, pts[i - 1].dy, cpX, pts[i].dy, pts[i].dx, pts[i].dy);
     }
-    canvas.drawPath(linePath, linePaint);
+    canvas.drawPath(
+        linePath,
+        Paint()
+          ..color = AppColors.primary
+          ..strokeWidth = 2.2
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round);
+
+    // Dots at each data point
+    final dotPaint = Paint()..color = AppColors.primary;
+    final dotBg = Paint()..color = const Color(0xFFFFFFFF);
+    for (final p in pts) {
+      canvas.drawCircle(p, 4, dotBg);
+      canvas.drawCircle(p, 3, dotPaint);
+    }
   }
 
   @override

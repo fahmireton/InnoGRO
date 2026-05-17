@@ -39,67 +39,130 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   void _showAddReminderDialog() {
     final ctrl = TextEditingController();
+    DateTime? dueDate;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: ctx.card,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Add Reminder',
-            style: TextStyle(
-                fontWeight: FontWeight.w800, color: ctx.textPrimary)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('Enter a title for your reminder:',
-              style: TextStyle(fontSize: 13, color: ctx.textSecondary)),
-          const SizedBox(height: 12),
-          TextField(
-            controller: ctrl,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: 'e.g. Check fertiliser stock',
-              hintStyle: TextStyle(color: ctx.textSecondary, fontSize: 13),
-              filled: true,
-              fillColor: ctx.secondary,
-              border: OutlineInputBorder(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          backgroundColor: ctx.card,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Text('Add Reminder',
+              style: TextStyle(
+                  fontWeight: FontWeight.w800, color: ctx.textPrimary)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              style: TextStyle(color: ctx.textPrimary, fontSize: 14),
+              decoration: InputDecoration(
+                labelText: 'Reminder title',
+                labelStyle: TextStyle(color: ctx.textSecondary, fontSize: 13),
+                hintText: 'e.g. Check fertiliser stock',
+                hintStyle:
+                    TextStyle(color: ctx.textSecondary, fontSize: 13),
+                filled: true,
+                fillColor: ctx.secondary,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: ctx,
+                  initialDate: dueDate ??
+                      DateTime.now().add(const Duration(days: 1)),
+                  firstDate: DateTime.now(),
+                  lastDate:
+                      DateTime.now().add(const Duration(days: 365)),
+                  builder: (_, child) => Theme(
+                    data: Theme.of(ctx).copyWith(
+                      colorScheme: ColorScheme.fromSeed(
+                          seedColor: AppColors.primary),
+                    ),
+                    child: child!,
+                  ),
+                );
+                if (picked != null) setS(() => dueDate = picked);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: ctx.secondary,
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 12),
+                  border: Border.all(
+                    color: dueDate != null
+                        ? AppColors.primary.withValues(alpha: 0.5)
+                        : ctx.border.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(children: [
+                  Icon(Icons.calendar_today_rounded,
+                      size: 18,
+                      color: dueDate != null
+                          ? AppColors.primary
+                          : ctx.textSecondary),
+                  const SizedBox(width: 10),
+                  Text(
+                    dueDate != null
+                        ? '${dueDate!.day} ${_monthName(dueDate!.month)} ${dueDate!.year}'
+                        : 'Tap to set due date',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: dueDate != null
+                            ? ctx.textPrimary
+                            : ctx.textSecondary),
+                  ),
+                ]),
+              ),
             ),
-          ),
-        ]),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: TextStyle(color: ctx.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final title = ctrl.text.trim();
-              if (title.isNotEmpty) {
-                setState(() {
-                  _reminders.add(_Reminder(
-                    title,
-                    DateTime.now().add(const Duration(days: 7)),
-                    false,
-                  ));
-                });
-              }
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+          ]),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel',
+                  style: TextStyle(color: ctx.textSecondary)),
             ),
-            child: const Text('Add'),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: () {
+                final title = ctrl.text.trim();
+                if (title.isNotEmpty) {
+                  setState(() {
+                    _reminders.add(_Reminder(
+                      title,
+                      dueDate ??
+                          DateTime.now().add(const Duration(days: 7)),
+                      false,
+                    ));
+                  });
+                }
+                Navigator.pop(ctx);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  String _monthName(int m) => const [
+        '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ][m];
 
   @override
   Widget build(BuildContext context) {

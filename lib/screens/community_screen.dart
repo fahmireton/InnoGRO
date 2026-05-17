@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import '../theme.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -11,7 +11,13 @@ class CommunityScreen extends StatefulWidget {
 
 class _CommunityScreenState extends State<CommunityScreen> {
   int _tab = 0;
-  final _tabs = ['Feed', 'Outbreak map', 'Experts', 'Library'];
+
+  static const _tabs = [
+    _TabItem('Feed', Icons.article_rounded),
+    _TabItem('Outbreak map', Icons.map_rounded),
+    _TabItem('Experts', Icons.people_rounded),
+    _TabItem('Library', Icons.menu_book_rounded),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +27,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Column(
@@ -38,11 +45,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         fontSize: 14, color: context.textSecondary)),
               ]),
             ),
+
+            // Tab bar — sticky, icon + text chips
             Container(
               margin: const EdgeInsets.only(top: 14),
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
               decoration: BoxDecoration(
-                color: context.bg.withValues(alpha: 0.95),
+                color: context.bg.withValues(alpha: 0.97),
                 border: Border(
                     bottom: BorderSide(
                         color: context.border.withValues(alpha: 0.4))),
@@ -50,36 +59,78 @@ class _CommunityScreenState extends State<CommunityScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: List.generate(
-                      _tabs.length,
-                      (i) => Padding(
-                            padding: EdgeInsets.only(
-                                right: i < _tabs.length - 1 ? 6 : 0),
-                            child: GestureDetector(
-                              onTap: () => setState(() => _tab = i),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: _tab == i
-                                      ? AppColors.primary
-                                      : context.secondary,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(_tabs[i],
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: _tab == i
-                                            ? Colors.white
-                                            : context.textSecondary)),
+                  children: List.generate(_tabs.length, (i) {
+                    final active = _tab == i;
+                    final tab = _tabs[i];
+                    return Padding(
+                      padding: EdgeInsets.only(
+                          right: i < _tabs.length - 1 ? 8 : 0),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _tab = i),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOut,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: active
+                                ? const LinearGradient(
+                                    colors: [
+                                      AppColors.primary,
+                                      Color(0xFF2E7D4F),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  )
+                                : null,
+                            color: active ? null : context.secondary,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: active
+                                  ? Colors.transparent
+                                  : context.border.withValues(alpha: 0.35),
+                            ),
+                            boxShadow: active
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.3),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    )
+                                  ]
+                                : null,
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(
+                              tab.icon,
+                              size: 14,
+                              color: active
+                                  ? Colors.white
+                                  : context.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              tab.label,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: active
+                                    ? Colors.white
+                                    : context.textSecondary,
+                                letterSpacing: 0.1,
                               ),
                             ),
-                          )),
+                          ]),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
               ),
             ),
+
+            // Tab content
             Expanded(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
@@ -105,17 +156,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
 // ── Feed tab ──────────────────────────────────────────────────────────────────
 
-class _Post {
-  final String authorName;
-  final String region;
-  final String content;
-  int likes;
-  final int replies;
-  final String time;
-  _Post({required this.authorName, required this.region, required this.content,
-      required this.likes, required this.replies, required this.time});
-}
-
 class _FeedTab extends StatefulWidget {
   const _FeedTab();
   @override
@@ -124,23 +164,16 @@ class _FeedTab extends StatefulWidget {
 
 class _FeedTabState extends State<_FeedTab> {
   final _draftCtrl = TextEditingController();
-
-  final List<_Post> _posts = [
-    _Post(authorName: 'Ahmad Rizal', region: 'Kedah',
-        content: 'Anyone else seeing brown leaf spot this season? Lost 20% of my yield last year to it.',
-        likes: 12, replies: 4, time: '2h ago'),
-    _Post(authorName: 'Siti Maimunah', region: 'Selangor',
-        content: 'Tried the new MR297 variety this season. Very resistant to blast so far! Highly recommended.',
-        likes: 34, replies: 8, time: '5h ago'),
-    _Post(authorName: 'Rajan Kumar', region: 'Perak',
-        content: 'Government fertilizer subsidy arrived late again. Anyone have contacts at DOA to follow up?',
-        likes: 7, replies: 11, time: '1d ago'),
-    _Post(authorName: 'Noraini Hamid', region: 'Johor',
-        content: 'Just used VisionGRO to diagnose my field. Caught bacterial blight early — saved a lot of work!',
-        likes: 21, replies: 3, time: '2d ago'),
-    _Post(authorName: 'Hafiz Abdullah', region: 'Kedah',
-        content: 'Flood hit 3 of my plots last week. Crop insurance (TPP) worth applying for? Anyone done it?',
-        likes: 9, replies: 6, time: '3d ago'),
+  final List<_PostData> _posts = [
+    _PostData('Pak Razak', 'Sekinchan, Selangor', '2h',
+        'Caught early sheath blight in plot 3. Trichoderma spray + draining standing water did the trick. Anyone else seeing it after the rain?',
+        24, 8),
+    _PostData('Aishah', 'Kedah', '5h',
+        'Bumper harvest from MR297 this season — 7.2 t/ha! Switched to organic neem oil rotation 3 months in.',
+        67, 19),
+    _PostData('Kumar', 'Perak', '1d',
+        'Brown planthopper warning in Teluk Intan area. Check undersides of leaves daily this week.',
+        41, 12),
   ];
 
   @override
@@ -154,6 +187,7 @@ class _FeedTabState extends State<_FeedTab> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       children: [
+        // Compose
         _card(context,
             child: Row(children: [
               Expanded(
@@ -179,19 +213,14 @@ class _FeedTabState extends State<_FeedTab> {
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: () {
-                  final text = _draftCtrl.text.trim();
-                  if (text.isNotEmpty) {
+                  if (_draftCtrl.text.trim().isNotEmpty) {
                     setState(() {
-                      _posts.insert(0, _Post(
-                        authorName: 'Farmer',
-                        region: 'Malaysia',
-                        content: text,
-                        likes: 0,
-                        replies: 0,
-                        time: 'just now',
-                      ));
+                      _posts.insert(
+                          0,
+                          _PostData('You', 'Selangor', 'now',
+                              _draftCtrl.text.trim(), 0, 0));
+                      _draftCtrl.clear();
                     });
-                    _draftCtrl.clear();
                   }
                 },
                 child: Container(
@@ -206,108 +235,98 @@ class _FeedTabState extends State<_FeedTab> {
               ),
             ])),
         const SizedBox(height: 14),
-        ..._posts.asMap().entries.map((entry) {
-          final i = entry.key;
-          final post = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _card(context,
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Row(children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
+        ..._posts.map((p) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _card(context,
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Row(children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                            child: Text(p.name[0],
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                    color: AppColors.primary))),
                       ),
-                      child: Center(
-                          child: Text(
-                              post.authorName.isNotEmpty
-                                  ? post.authorName[0].toUpperCase()
-                                  : 'F',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                  color: AppColors.primary))),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                          Text(post.authorName,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: context.textPrimary)),
-                          Text('${post.region} · ${post.time}',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: context.textSecondary)),
-                        ])),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentLight,
-                        borderRadius: BorderRadius.circular(20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(p.name,
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: context.textPrimary)),
+                            Text('${p.region} · ${p.time}',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: context.textSecondary)),
+                          ])),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentLight,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text('Paddy',
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accent)),
                       ),
-                      child: const Text('Paddy',
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.accent)),
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-                  Text(post.content,
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: context.textPrimary,
-                          height: 1.5)),
-                  const SizedBox(height: 10),
-                  Row(children: [
-                    GestureDetector(
-                      onTap: () => setState(() => _posts[i].likes++),
-                      child: Icon(Icons.favorite_border_rounded,
+                    ]),
+                    const SizedBox(height: 10),
+                    Text(p.content,
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: context.textPrimary,
+                            height: 1.5)),
+                    const SizedBox(height: 10),
+                    Row(children: [
+                      Icon(Icons.favorite_border_rounded,
                           size: 16, color: context.textSecondary),
-                    ),
-                    const SizedBox(width: 4),
-                    Text('${post.likes}',
-                        style: TextStyle(
-                            fontSize: 12, color: context.textSecondary)),
-                    const SizedBox(width: 16),
-                    Icon(Icons.chat_bubble_outline_rounded,
-                        size: 16, color: context.textSecondary),
-                    const SizedBox(width: 4),
-                    Text('${post.replies}',
-                        style: TextStyle(
-                            fontSize: 12, color: context.textSecondary)),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Feature coming soon'),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                        );
-                      },
-                      child: Text('Reply',
+                      const SizedBox(width: 4),
+                      Text('${p.likes}',
                           style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary)),
-                    ),
-                  ]),
-                ])),
-          );
-        }),
+                              fontSize: 12, color: context.textSecondary)),
+                      const SizedBox(width: 16),
+                      Icon(Icons.chat_bubble_outline_rounded,
+                          size: 16, color: context.textSecondary),
+                      const SizedBox(width: 4),
+                      Text('${p.replies}',
+                          style: TextStyle(
+                              fontSize: 12, color: context.textSecondary)),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Feature coming soon'),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        },
+                        child: Text('Reply',
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary)),
+                      ),
+                    ]),
+                  ])),
+            )),
       ],
     );
   }
@@ -315,69 +334,50 @@ class _FeedTabState extends State<_FeedTab> {
 
 // ── Outbreak map tab ──────────────────────────────────────────────────────────
 
+class _StateRisk {
+  final String name, risk;
+  final Color color;
+  final double lat, lng;
+  const _StateRisk(this.name, this.color, this.risk, this.lat, this.lng);
+}
+
 class _OutbreakTab extends StatelessWidget {
   const _OutbreakTab();
 
-  static const _outbreaks = [
-    (state: 'Kedah', disease: 'Rice Blast', severity: 'High', lat: 6.1184, lng: 100.3685),
-    (state: 'Selangor', disease: 'Brown Plant Hopper', severity: 'Medium', lat: 3.0738, lng: 101.5183),
-    (state: 'Perak', disease: 'Sheath Blight', severity: 'Medium', lat: 4.5921, lng: 101.0901),
-    (state: 'Johor', disease: 'Bacterial Blight', severity: 'Low', lat: 1.4854, lng: 103.7618),
-    (state: 'Pahang', disease: 'Tungro Virus', severity: 'High', lat: 3.8126, lng: 103.3256),
-    (state: 'Kelantan', disease: 'Rice Blast', severity: 'Medium', lat: 6.1254, lng: 102.2381),
-    (state: 'Terengganu', disease: 'Leaf Folder', severity: 'Low', lat: 5.3117, lng: 103.1324),
-    (state: 'Sabah', disease: 'Brown Plant Hopper', severity: 'Low', lat: 5.9788, lng: 116.0753),
-    (state: 'Sarawak', disease: 'Sheath Rot', severity: 'Medium', lat: 1.5533, lng: 110.3592),
+  static const _stateRisks = [
+    _StateRisk('Kedah',        AppColors.red,   'High risk',   6.12,  100.37),
+    _StateRisk('Perlis',       AppColors.amber, 'Medium risk', 6.44,  100.18),
+    _StateRisk('Pulau Pinang', AppColors.amber, 'Medium risk', 5.42,  100.33),
+    _StateRisk('Perak',        AppColors.accent,'Low risk',    4.60,  101.09),
+    _StateRisk('Selangor',     AppColors.amber, 'Medium risk', 3.07,  101.52),
+    _StateRisk('Johor',        AppColors.accent,'Low risk',    1.49,  103.76),
+    _StateRisk('Pahang',       AppColors.amber, 'Medium risk', 3.81,  103.33),
+    _StateRisk('Kelantan',     AppColors.red,   'High risk',   6.13,  102.24),
+    _StateRisk('Terengganu',   AppColors.amber, 'Medium risk', 5.31,  103.14),
+    _StateRisk('Sabah',        AppColors.accent,'Low risk',    5.98,  116.07),
+    _StateRisk('Sarawak',      AppColors.accent,'Low risk',    1.55,  110.36),
   ];
-
-  Color _severityColor(String severity) {
-    switch (severity.toLowerCase()) {
-      case 'high':
-        return AppColors.red;
-      case 'medium':
-        return AppColors.amber;
-      default:
-        return AppColors.accent;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    final markers = _outbreaks.map((o) {
-      final color = _severityColor(o.severity);
-      return Marker(
-        point: LatLng(o.lat, o.lng),
-        width: 28,
-        height: 28,
-        child: Container(
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: [
-              BoxShadow(
-                  color: color.withValues(alpha: 0.4),
-                  blurRadius: 6,
-                  spreadRadius: 1),
-            ],
-          ),
-        ),
-      );
-    }).toList();
-
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       children: [
         _card(context,
             child: Column(children: [
+              // ── Real flutter_map ──────────────────────────────────────────
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: SizedBox(
                   height: 260,
                   child: FlutterMap(
                     options: const MapOptions(
-                      initialCenter: LatLng(4.2105, 108.9758),
-                      initialZoom: 6,
+                      initialCenter: LatLng(4.5, 108.5),
+                      initialZoom: 5.0,
+                      interactionOptions: InteractionOptions(
+                        flags: InteractiveFlag.pinchZoom |
+                            InteractiveFlag.drag,
+                      ),
                     ),
                     children: [
                       TileLayer(
@@ -385,7 +385,52 @@ class _OutbreakTab extends StatelessWidget {
                             'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.innogro.app',
                       ),
-                      MarkerLayer(markers: markers),
+                      MarkerLayer(
+                        markers: _stateRisks.map((s) {
+                          return Marker(
+                            point: LatLng(s.lat, s.lng),
+                            width: 80,
+                            height: 48,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: s.color,
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: s.color.withValues(alpha: 0.4),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    s.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: s.color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ],
                   ),
                 ),
@@ -401,34 +446,32 @@ class _OutbreakTab extends StatelessWidget {
             ])),
         const SizedBox(height: 12),
         _card(context,
-            child: Column(children: [
-              ..._outbreaks.asMap().entries.map((entry) {
-                final o = entry.value;
-                final color = _severityColor(o.severity);
-                final isLast = entry.key == _outbreaks.length - 1;
-                return Column(children: [
-                  _riskRow(context, color, o.state, o.disease, o.severity),
-                  if (!isLast) Divider(height: 1, color: context.border),
-                ]);
-              }),
-            ])),
+            child: Column(
+                children: List.generate(_stateRisks.length, (i) {
+              final s = _stateRisks[i];
+              final isLast = i == _stateRisks.length - 1;
+              return Column(children: [
+                _riskRow(context, s.color, s.name, s.risk),
+                if (!isLast) Divider(height: 1, color: context.border),
+              ]);
+            }))),
       ],
     );
   }
 
-  Widget _legend(Color c, String l, BuildContext context) =>
-      Row(children: [
+  Widget _legend(Color c, String l, BuildContext context) => Row(children: [
         Container(
             width: 10,
             height: 10,
-            decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+            decoration:
+                BoxDecoration(color: c, shape: BoxShape.circle)),
         const SizedBox(width: 6),
         Text(l,
             style: TextStyle(fontSize: 12, color: context.textSecondary)),
       ]);
 
-  Widget _riskRow(BuildContext context, Color color, String region,
-      String disease, String severity) =>
+  Widget _riskRow(
+          BuildContext context, Color color, String region, String risk) =>
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(children: [
@@ -442,19 +485,12 @@ class _OutbreakTab extends StatelessWidget {
               size: 14, color: context.textSecondary),
           const SizedBox(width: 4),
           Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-            Text(region,
-                style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: context.textPrimary)),
-            Text(disease,
-                style:
-                    TextStyle(fontSize: 11, color: context.textSecondary)),
-          ])),
-          Text('$severity risk',
+              child: Text(region,
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: context.textPrimary))),
+          Text(risk,
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -468,124 +504,85 @@ class _OutbreakTab extends StatelessWidget {
 class _ExpertsTab extends StatelessWidget {
   const _ExpertsTab();
 
-  static const _experts = [
-    (name: 'Dr. Lim Wei Han', institution: 'MARDI', specialization: 'Plant Pathology', experience: 15, available: true),
-    (name: 'Prof. Siti Norzahra', institution: 'UPM', specialization: 'Rice Agronomy', experience: 20, available: false),
-    (name: 'Dr. Rajendran Kumar', institution: 'DOA Kedah', specialization: 'Pest Management', experience: 12, available: true),
-    (name: 'Dr. Amirul Hakim', institution: 'MARDI', specialization: 'Soil Science', experience: 10, available: false),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       children: [
-        ..._experts.map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _card(context,
-                  child: Column(children: [
-                    Row(children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle),
-                        child: const Icon(Icons.person_rounded,
-                            color: Colors.white, size: 26),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                            Text(e.name,
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 15,
-                                    color: context.textPrimary)),
-                            Text(
-                                '${e.institution} · ${e.specialization} · ${e.experience} yrs',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: context.textSecondary)),
-                          ])),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: e.available
-                              ? AppColors.accentLight
-                              : AppColors.redLight,
-                          borderRadius: BorderRadius.circular(20),
+        _card(context,
+            child: Column(children: [
+              Row(children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                      color: AppColors.primary, shape: BoxShape.circle),
+                  child: const Icon(Icons.person_rounded,
+                      color: Colors.white, size: 26),
+                ),
+                const SizedBox(width: 14),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Dr. Lim Wei Han',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: context.textPrimary)),
+                  Text('MARDI · Plant Pathology · 18 yrs',
+                      style: TextStyle(
+                          fontSize: 12, color: context.textSecondary)),
+                ]),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Feature coming soon'),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: Text(e.available ? 'Available' : 'Busy',
-                            style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: e.available
-                                    ? AppColors.accent
-                                    : AppColors.red)),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: context.secondary,
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                    ]),
-                    const SizedBox(height: 10),
-                    Row(children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Feature coming soon'),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: context.secondary,
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Center(
-                                child: Text('View profile',
-                                    style: TextStyle(
-                                        color: context.textPrimary,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14))),
-                          ),
-                        ),
+                      child: Center(
+                          child: Text('View profile',
+                              style: TextStyle(
+                                  color: context.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14))),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _showBookingSheet(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: e.available
-                              ? () => _showBookingSheet(context, e.name)
-                              : null,
-                          child: Container(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: e.available
-                                  ? AppColors.primary
-                                  : AppColors.primary.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: const Center(
-                                child: Text('Book consultation',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14))),
-                          ),
-                        ),
-                      ),
-                    ]),
-                  ])),
-            )),
-        const SizedBox(height: 8),
+                      child: const Center(
+                          child: Text('Book consultation',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14))),
+                    ),
+                  ),
+                ),
+              ]),
+            ])),
+        const SizedBox(height: 20),
         Text('EXTENSION OFFICES',
             style: TextStyle(
                 fontSize: 11,
@@ -668,7 +665,7 @@ class _ExpertsTab extends StatelessWidget {
                 height: 1.4)),
       ]);
 
-  void _showBookingSheet(BuildContext context, String expertName) {
+  void _showBookingSheet(BuildContext context) {
     String? selectedSlot;
     showModalBottomSheet(
       context: context,
@@ -677,8 +674,12 @@ class _ExpertsTab extends StatelessWidget {
           borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (sheetContext) {
         final slots = [
-          'Mon 10:00', 'Tue 14:00', 'Wed 09:00',
-          'Thu 11:00', 'Fri 15:00', 'Sat 10:00',
+          'Mon 10:00',
+          'Tue 14:00',
+          'Wed 09:00',
+          'Thu 11:00',
+          'Fri 15:00',
+          'Sat 10:00'
         ];
         return StatefulBuilder(
           builder: (sheetContext, setS) => Padding(
@@ -711,8 +712,7 @@ class _ExpertsTab extends StatelessWidget {
                     .map((s) => GestureDetector(
                           onTap: () {
                             setS(() => selectedSlot = s);
-                            final messenger =
-                                ScaffoldMessenger.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
                             final nav = Navigator.of(sheetContext);
                             Future.delayed(
                                 const Duration(milliseconds: 200), () {
@@ -720,7 +720,7 @@ class _ExpertsTab extends StatelessWidget {
                               messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                      'Booking request sent for $s. Check your SMS for confirmation.'),
+                                      'Consultation booked for $s. Check your SMS for confirmation.'),
                                   behavior: SnackBarBehavior.floating,
                                   shape: RoundedRectangleBorder(
                                       borderRadius:
@@ -760,14 +760,24 @@ class _ExpertsTab extends StatelessWidget {
 
 // ── Library tab ───────────────────────────────────────────────────────────────
 
-class _LibraryTab extends StatelessWidget {
+class _LibraryTab extends StatefulWidget {
   const _LibraryTab();
+  @override
+  State<_LibraryTab> createState() => _LibraryTabState();
+}
+
+class _LibraryTabState extends State<_LibraryTab> {
+  int? _playingIndex;
 
   static const _videos = [
-    (Icons.play_circle_outline_rounded, 'Identifying rice blast', '5 min'),
-    (Icons.videocam_outlined, 'Organic pest control', '8 min'),
-    (Icons.play_circle_outline_rounded, 'Water management', '6 min'),
-    (Icons.videocam_outlined, 'Harvest timing', '4 min'),
+    _VideoItem('Identifying Rice Blast', '5 min', 'assets/images/paddy_diseased2.png',
+        'Learn to spot diamond-shaped lesions on leaves — the hallmark sign of blast infection.'),
+    _VideoItem('Organic Pest Control', '8 min', 'assets/images/paddy_healthy.png',
+        'Neem oil, Bacillus subtilis, and crop rotation methods that work without chemicals.'),
+    _VideoItem('Water Management', '6 min', 'assets/images/paddyphase/Growing.png',
+        'Alternate wetting and drying (AWD) to save up to 30% water while keeping yields high.'),
+    _VideoItem('Harvest Timing', '4 min', 'assets/images/paddyphase/Harvest.png',
+        'How to judge grain moisture and the right days-after-flowering to maximise grain weight.'),
   ];
 
   static const _calendar = [
@@ -777,105 +787,124 @@ class _LibraryTab extends StatelessWidget {
     ('Sep–Oct', 'Ripening & harvest', AppColors.amber, AppColors.amberLight),
   ];
 
+  static const _stories = [
+    _Story('Aishah bt Yusof', 'Kedah', '4 t/ha → 7 t/ha',
+        'Used AI early-detection alerts to cut blast losses by 60% and adopted neem oil rotation. Two seasons later, yield nearly doubled.',
+        Icons.emoji_events_rounded, AppColors.amber),
+    _Story('Pak Razak', 'Sekinchan, Selangor', 'Water savings 30%',
+        'Switched to AWD irrigation after watching the water management tutorial. Saved RM 800/season on pumping costs with no yield drop.',
+        Icons.water_drop_rounded, AppColors.info),
+    _Story('Kumar Annamalai', 'Teluk Intan, Perak', '0 blast episodes',
+        'Set up weekly AI scans on all 3 plots. Caught early BPH infestation twice before it spread — zero crop loss this season.',
+        Icons.shield_rounded, AppColors.accent),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       children: [
         Text('BEST PRACTICES LIBRARY',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: context.textSecondary,
-                letterSpacing: 1.2)),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 10),
-        GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 0.9,
-          children: _videos
-              .map((v) => GestureDetector(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Opening "${v.$2}"…'),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: context.card,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: context.border.withValues(alpha: 0.4)),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2))
-                        ],
-                      ),
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.primary
-                                          .withValues(alpha: 0.3),
-                                      AppColors.primary
-                                          .withValues(alpha: 0.05)
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(20)),
-                                ),
-                                child: Center(
-                                    child: Icon(v.$1,
-                                        size: 40,
-                                        color: AppColors.primary)),
-                              ),
+        ..._videos.asMap().entries.map((e) {
+          final i = e.key;
+          final v = e.value;
+          final isPlaying = _playingIndex == i;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: GestureDetector(
+              onTap: () => setState(() => _playingIndex = isPlaying ? null : i),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.card,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: context.border.withValues(alpha: 0.4)),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  // Thumbnail with play/pause overlay
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    child: SizedBox(
+                      height: 140,
+                      width: double.infinity,
+                      child: Stack(fit: StackFit.expand, children: [
+                        Image.asset(v.thumbnail, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              decoration: BoxDecoration(gradient: LinearGradient(
+                                colors: [AppColors.primary.withValues(alpha: 0.3), AppColors.primary.withValues(alpha: 0.05)],
+                              )),
+                            )),
+                        // Dark overlay
+                        DecoratedBox(decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                            colors: [Colors.black.withValues(alpha: 0.1), Colors.black.withValues(alpha: 0.5)],
+                          ),
+                        )),
+                        // Play/Pause button
+                        Center(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 56, height: 56,
+                            decoration: BoxDecoration(
+                              color: isPlaying ? AppColors.red : Colors.white.withValues(alpha: 0.9),
+                              shape: BoxShape.circle,
+                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 12)],
                             ),
-                            Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                  Text(v.$2,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 12,
-                                          color: context.textPrimary),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis),
-                                  Text(v.$3,
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: context.textSecondary)),
-                                ])),
-                          ]),
+                            child: Icon(
+                              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                              color: isPlaying ? Colors.white : AppColors.primary,
+                              size: 30,
+                            ),
+                          ),
+                        ),
+                        // Duration badge
+                        Positioned(bottom: 8, right: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(6)),
+                            child: Text(v.duration, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                          )),
+                      ]),
                     ),
-                  ))
-              .toList(),
-        ),
-        const SizedBox(height: 20),
+                  ),
+                  // Info
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(v.title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: context.textPrimary)),
+                      if (isPlaying) ...[
+                        const SizedBox(height: 6),
+                        Text(v.description, style: TextStyle(fontSize: 12, color: context.textSecondary, height: 1.4)),
+                        const SizedBox(height: 10),
+                        // Simulated progress bar
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(value: 0.38, minHeight: 4,
+                            backgroundColor: context.secondary,
+                            valueColor: const AlwaysStoppedAnimation(AppColors.primary)),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                          Text('1:55', style: TextStyle(fontSize: 10, color: context.textSecondary)),
+                          Text(v.duration, style: TextStyle(fontSize: 10, color: context.textSecondary)),
+                        ]),
+                      ] else
+                        Text(v.description, maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12, color: context.textSecondary)),
+                    ]),
+                  ),
+                ]),
+              ),
+            ),
+          );
+        }),
+
+        const SizedBox(height: 8),
         Text('SEASONAL CALENDAR',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: context.textSecondary,
-                letterSpacing: 1.2)),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 10),
         _card(context,
             child: Column(
@@ -883,62 +912,63 @@ class _LibraryTab extends StatelessWidget {
                 final i = e.key;
                 final c = e.value;
                 return Padding(
-                  padding: EdgeInsets.only(
-                      bottom: i < _calendar.length - 1 ? 12 : 0),
+                  padding: EdgeInsets.only(bottom: i < _calendar.length - 1 ? 12 : 0),
                   child: Row(children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                          color: c.$4,
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Text(c.$1,
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: c.$3)),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(color: c.$4, borderRadius: BorderRadius.circular(20)),
+                      child: Text(c.$1, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c.$3)),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
-                        child: Text(c.$2,
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: context.textPrimary))),
+                    Expanded(child: Text(c.$2, style: TextStyle(fontSize: 13, color: context.textPrimary))),
                   ]),
                 );
               }).toList(),
             )),
+
         const SizedBox(height: 20),
         Text('SUCCESS STORIES',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: context.textSecondary,
-                letterSpacing: 1.2)),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.textSecondary, letterSpacing: 1.2)),
         const SizedBox(height: 10),
-        _card(context,
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-              const Icon(Icons.emoji_events_rounded,
-                  color: AppColors.amber, size: 28),
-              const SizedBox(height: 8),
-              Text('From 4 t/ha to 7 t/ha in two seasons',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: context.textPrimary)),
-              const SizedBox(height: 4),
-              Text(
-                  "Aishah from Kedah used VisionGRO's early detection alerts to cut losses by 60% and adopt cleaner spraying schedules.",
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: context.textSecondary,
-                      height: 1.5)),
-            ])),
+        ..._stories.map((s) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _card(context, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(color: s.iconColor.withValues(alpha: 0.15), shape: BoxShape.circle),
+                child: Icon(s.icon, color: s.iconColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(s.name, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: context.textPrimary)),
+                Text(s.location, style: TextStyle(fontSize: 11, color: context.textSecondary)),
+              ])),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: s.iconColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
+                child: Text(s.result, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: s.iconColor)),
+              ),
+            ]),
+            const SizedBox(height: 10),
+            Text(s.story, style: TextStyle(fontSize: 13, color: context.textSecondary, height: 1.5)),
+          ])),
+        )),
       ],
     );
   }
+}
+
+class _VideoItem {
+  final String title, duration, thumbnail, description;
+  const _VideoItem(this.title, this.duration, this.thumbnail, this.description);
+}
+
+class _Story {
+  final String name, location, result, story;
+  final IconData icon;
+  final Color iconColor;
+  const _Story(this.name, this.location, this.result, this.story, this.icon, this.iconColor);
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -963,3 +993,16 @@ Widget _card(BuildContext context, {required Widget child}) => Container(
       ),
       child: child,
     );
+
+class _PostData {
+  final String name, region, time, content;
+  final int likes, replies;
+  _PostData(this.name, this.region, this.time, this.content, this.likes,
+      this.replies);
+}
+
+class _TabItem {
+  final String label;
+  final IconData icon;
+  const _TabItem(this.label, this.icon);
+}

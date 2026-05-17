@@ -34,13 +34,13 @@ class AppColors {
   static const cardShadow = Color(0x0F000000);
   static const shadowLg = Color(0x1A000000);
 
-  // Dark mode
-  static const darkBg = Color(0xFF0D1A10);
-  static const darkCard = Color(0xFF162318);
-  static const darkSecondary = Color(0xFF1E2E20);
-  static const darkBorder = Color(0xFF2A3D2C);
-  static const darkTextPrimary = Color(0xFFEEEEEE);
-  static const darkTextSecondary = Color(0xFF9A9A9A);
+  // Dark mode — lifted ~15% so it reads as "deep forest" not "cave"
+  static const darkBg = Color(0xFF162219);
+  static const darkCard = Color(0xFF1E2E23);
+  static const darkSecondary = Color(0xFF263829);
+  static const darkBorder = Color(0xFF37503C);
+  static const darkTextPrimary = Color(0xFFF0F0F0);
+  static const darkTextSecondary = Color(0xFFA0A8A2);
 }
 
 extension AppTheme on BuildContext {

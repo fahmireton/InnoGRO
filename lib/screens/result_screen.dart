@@ -1,11 +1,16 @@
+import 'dart:io';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../models/disease.dart';
+import '../services/scan_history_service.dart';
 
 class ResultScreen extends StatefulWidget {
   final Disease disease;
-  const ResultScreen({super.key, required this.disease});
+  final List<XFile> images;
+  const ResultScreen({super.key, required this.disease, this.images = const []});
   @override
   State<ResultScreen> createState() => _ResultScreenState();
 }
@@ -14,8 +19,28 @@ class _ResultScreenState extends State<ResultScreen> {
   bool _organicSelected = true;
   double _acres = 3.2;
   final _acresCtrl = TextEditingController(text: '3.2');
+  bool _saved = false;
 
   Disease get d => widget.disease;
+
+  @override
+  void initState() {
+    super.initState();
+    _autoSave();
+  }
+
+  Future<void> _autoSave() async {
+    if (d.id == 'inconclusive') return;
+    final record = ScanHistoryRecord(
+      id: '${DateTime.now().millisecondsSinceEpoch}',
+      diseaseName: d.name,
+      confidence: d.confidence,
+      severity: d.severity,
+      scannedAt: DateTime.now(),
+    );
+    await ScanHistoryService().addScan(record);
+    if (mounted) setState(() => _saved = true);
+  }
 
   Color get _severityColor =>
       d.severity == 'High'
@@ -50,10 +75,10 @@ class _ResultScreenState extends State<ResultScreen> {
 
   void _saveToField() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Saved to field history'),
+      SnackBar(
+        content: Text(_saved ? 'Already saved to history' : 'Saved to scan history'),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12))),
       ),
     );
@@ -88,14 +113,14 @@ class _ResultScreenState extends State<ResultScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: context.secondary,
+                      color: _saved ? AppColors.accentLight : context.secondary,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text('Save',
+                    child: Text(_saved ? 'Saved ✓' : 'Save',
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: context.textPrimary)),
+                            color: _saved ? AppColors.primary : context.textPrimary)),
                   ),
                 ),
               ),
@@ -129,31 +154,37 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _photoRow() {
-    final colors = [
-      const Color(0xFF8B6914),
-      const Color(0xFF5A7A3A),
-      const Color(0xFF7A4A3A)
-    ];
+    final imgs = widget.images;
     return Row(
-      children: List.generate(
-          3,
-          (i) => Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(right: i < 2 ? 8 : 0),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colors[i % colors.length]
-                            .withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.grass_rounded,
-                          color: colors[i % colors.length], size: 36),
-                    ),
-                  ),
-                ),
-              )),
+      children: List.generate(3, (i) {
+        final hasImage = i < imgs.length;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: i < 2 ? 8 : 0),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: hasImage
+                    ? (kIsWeb
+                        ? Image.network(imgs[i].path, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _photoPlaceholder(i))
+                        : Image.file(File(imgs[i].path), fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _photoPlaceholder(i)))
+                    : _photoPlaceholder(i),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _photoPlaceholder(int i) {
+    final colors = [const Color(0xFF5A7A3A), const Color(0xFF8B6914), const Color(0xFF7A4A3A)];
+    return Container(
+      decoration: BoxDecoration(color: colors[i % colors.length].withValues(alpha: 0.15)),
+      child: Icon(Icons.grass_rounded, color: colors[i % colors.length], size: 36),
     );
   }
 
