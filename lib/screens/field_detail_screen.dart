@@ -1,335 +1,665 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/field.dart';
+import '../widgets/rice_plant.dart';
+import 'field_map_screen.dart';
 
 class FieldDetailScreen extends StatefulWidget {
   final PaddyField field;
   const FieldDetailScreen({super.key, required this.field});
-
   @override
   State<FieldDetailScreen> createState() => _FieldDetailScreenState();
 }
 
 class _FieldDetailScreenState extends State<FieldDetailScreen> {
   late PaddyField f;
+  late GrowthStage _viewedStage;
+  final _noteCtrl = TextEditingController();
+  final List<String> _notes = [];
 
   @override
   void initState() {
     super.initState();
     f = widget.field;
+    _viewedStage = f.stage;
   }
-
-  void _water() {
-    setState(() {
-      f.waterLevel = (f.waterLevel + 10).clamp(0, 100);
-      f.activityLog.insert(0, '💧 Watered field — level now ${f.waterLevel}%');
-    });
-    _snack('Field watered successfully 💧');
-  }
-
-  void _fertilize() {
-    setState(() {
-      f.fertilizerLevel = (f.fertilizerLevel + 15).clamp(0, 100);
-      f.activityLog.insert(0, '🌿 Fertiliser applied — level now ${f.fertilizerLevel}%');
-    });
-    _snack('Fertiliser applied 🌿');
-  }
-
-  void _nextStage() {
-    final stages = GrowthStage.values;
-    final idx = stages.indexOf(f.stage);
-    if (idx < stages.length - 1) {
-      setState(() {
-        f.stage = stages[idx + 1];
-        f.activityLog.insert(0, '📈 Stage advanced to ${f.stage.label}');
-      });
-      _snack('Advanced to ${f.stage.label} ${f.stage.emoji}');
-    } else {
-      _snack('Already at final stage ✅');
-    }
-  }
-
-  void _pestCheck() {
-    setState(() {
-      f.healthScore = (f.healthScore + 5).clamp(0, 100);
-      f.activityLog.insert(0, '🔍 Pest check — all clear');
-    });
-    _snack('Pest check done — all clear! 🔍');
-  }
-
-  void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      duration: const Duration(seconds: 2)));
 
   @override
-  Widget build(BuildContext context) {
-    final days = DateTime.now().difference(f.plantedDate).inDays;
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 200,
-            backgroundColor: AppColors.primary,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
-                  ),
-                ),
-                padding: const EdgeInsets.fromLTRB(20, 80, 20, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Row(children: [
-                      Text(f.stage.emoji, style: const TextStyle(fontSize: 36)),
-                      const SizedBox(width: 14),
-                      Expanded(child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(f.name, style: const TextStyle(
-                            color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
-                          Text('${f.location} • ${f.areaMorgen} morgen • Day $days',
-                            style: const TextStyle(color: Colors.white60, fontSize: 12)),
-                        ],
-                      )),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: f.healthStatus.bgColor, borderRadius: BorderRadius.circular(20)),
-                        child: Text(f.healthStatus.label,
-                          style: TextStyle(color: f.healthStatus.color, fontWeight: FontWeight.w700, fontSize: 12)),
-                      ),
-                    ]),
-                  ],
-                ),
-              ),
-            ),
+  void dispose() {
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Delete Field',
+            style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.red)),
+        content: Text(
+            'Are you sure you want to remove "${f.name}"? This action cannot be undone.',
+            style: TextStyle(fontSize: 13, color: ctx.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: ctx.textSecondary)),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _stageCard(),
-                const SizedBox(height: 16),
-                _metricsCard(),
-                const SizedBox(height: 16),
-                _actionsCard(),
-                if (f.scanHistory.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _diseaseHistoryCard(),
-                ],
-                const SizedBox(height: 16),
-                _activityCard(),
-              ]),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
   }
 
-  Widget _stageCard() => _card(child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _cardHeader('Growth Stage', Icons.trending_up_rounded, AppColors.accent, AppColors.accentLight),
-      const SizedBox(height: 14),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text('${f.stage.emoji} ${f.stage.label}',
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary)),
-        Text('${(f.stage.progress * 100).toInt()}%',
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.accent)),
-      ]),
-      const SizedBox(height: 8),
-      ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: LinearProgressIndicator(
-          value: f.stage.progress,
-          backgroundColor: AppColors.bg,
-          valueColor: const AlwaysStoppedAnimation(AppColors.accent),
-          minHeight: 10,
-        ),
-      ),
-      const SizedBox(height: 14),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: GrowthStage.values.map((s) {
-          final active = s.index <= f.stage.index;
-          return Opacity(
-            opacity: active ? 1.0 : 0.3,
-            child: Column(children: [
-              Text(s.emoji, style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 2),
-              Text(s.label.split(' ').first,
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600,
-                  color: active ? AppColors.accent : AppColors.textSecondary)),
-            ]),
-          );
-        }).toList(),
-      ),
-      const SizedBox(height: 10),
-      Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: AppColors.accentLight, borderRadius: BorderRadius.circular(10)),
-        child: Row(children: [
-          const Icon(Icons.schedule_rounded, size: 16, color: AppColors.primary),
-          const SizedBox(width: 6),
-          Text('~${f.stage.daysToHarvest} days to harvest',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
-        ]),
-      ),
-    ],
-  ));
-
-  Widget _metricsCard() => _card(child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _cardHeader('Field Metrics', Icons.bar_chart_rounded, const Color(0xFF7C3AED), const Color(0xFFF3E8FF)),
-      const SizedBox(height: 14),
-      _metricBar('💧 Water Level', f.waterLevel, const Color(0xFF0EA5E9)),
-      const SizedBox(height: 12),
-      _metricBar('🌿 Fertiliser', f.fertilizerLevel, const Color(0xFF7C3AED)),
-      const SizedBox(height: 12),
-      _metricBar('❤️ Health Score', f.healthScore, f.healthStatus.color),
-    ],
-  ));
-
-  Widget _metricBar(String label, int value, Color color) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-        Text('$value%', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: color)),
-      ]),
-      const SizedBox(height: 6),
-      ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: LinearProgressIndicator(
-          value: value / 100,
-          backgroundColor: AppColors.bg,
-          valueColor: AlwaysStoppedAnimation(color),
-          minHeight: 8,
-        ),
-      ),
-    ],
-  );
-
-  Widget _actionsCard() => _card(child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _cardHeader('Quick Actions', Icons.flash_on_rounded, AppColors.amber, AppColors.amberLight),
-      const SizedBox(height: 14),
-      Row(children: [
-        Expanded(child: _actionBtn('💧 Water', const Color(0xFF0EA5E9), _water)),
-        const SizedBox(width: 10),
-        Expanded(child: _actionBtn('🌿 Fertilise', const Color(0xFF7C3AED), _fertilize)),
-      ]),
-      const SizedBox(height: 10),
-      Row(children: [
-        Expanded(child: _actionBtn('📈 Next Stage', AppColors.accent, _nextStage)),
-        const SizedBox(width: 10),
-        Expanded(child: _actionBtn('🔍 Pest Check', AppColors.amber, _pestCheck)),
-      ]),
-    ],
-  ));
-
-  Widget _actionBtn(String label, Color color, VoidCallback onTap) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Center(child: Text(label,
-        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: color))),
-    ),
-  );
-
-  Widget _diseaseHistoryCard() => _card(child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _cardHeader('Disease History', Icons.bug_report_rounded, AppColors.red, AppColors.redLight),
-      const SizedBox(height: 12),
-      ...f.scanHistory.map((s) => Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(10)),
-        child: Row(children: [
-          Container(width: 8, height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: s.severity == 'High' ? AppColors.red : AppColors.amber,
-            )),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(s.diseaseName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-            Text('${s.confidence}% confidence • ${_formatDate(s.date)}',
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-          ])),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: s.severity == 'High' ? AppColors.redLight : AppColors.amberLight,
-              borderRadius: BorderRadius.circular(20),
+  void _applyTreatment() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Apply Treatment',
+            style: TextStyle(fontWeight: FontWeight.w800, color: ctx.textPrimary)),
+        content: Text(
+            'Mark a treatment as applied to "${f.name}"? This will be logged in the field\'s activity history.',
+            style: TextStyle(fontSize: 13, color: ctx.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: ctx.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                f.activityLog.insert(0, 'Treatment applied');
+              });
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Treatment logged successfully'),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text(s.severity,
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                color: s.severity == 'High' ? AppColors.red : AppColors.amber)),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final days = DateTime.now().difference(f.plantedDate).inDays;
+    final progressPct = (days / 110).clamp(0.0, 1.0);
+
+    return Scaffold(
+      backgroundColor: context.bg,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: context.bg,
+              scrolledUnderElevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                color: AppColors.primary,
+                onPressed: () => Navigator.pop(context),
+              ),
+              title: Text(f.name,
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: context.textPrimary)),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _confirmDelete,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.redLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded,
+                          color: AppColors.red, size: 20),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Variety subtitle
+                    Text('Paddy (${f.variety})',
+                        style: TextStyle(fontSize: 13, color: context.textSecondary)),
+                    const SizedBox(height: 14),
+
+                    // Stats row
+                    _statsRow(context, days),
+                    const SizedBox(height: 12),
+
+                    // Location + map button
+                    _locationRow(context),
+                    const SizedBox(height: 22),
+
+                    // Growth tracking section
+                    _sectionHeader(context, 'GROWTH TRACKING'),
+                    const SizedBox(height: 10),
+                    _growthTimelineCard(context),
+                    const SizedBox(height: 12),
+                    _stageDetailCard(context, days, progressPct),
+                    const SizedBox(height: 24),
+
+                    // Disease history
+                    _sectionHeader(context, 'DISEASE HISTORY'),
+                    const SizedBox(height: 10),
+                    _diseaseCard(context),
+                    const SizedBox(height: 24),
+
+                    // Notes
+                    _sectionHeader(context, 'NOTES'),
+                    const SizedBox(height: 10),
+                    _notesCard(context),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(BuildContext context, String t) => Text(t,
+      style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: context.textSecondary,
+          letterSpacing: 1.2));
+
+  Widget _statsRow(BuildContext context, int days) => Row(children: [
+        _statCard(context, '${f.areaMorgen.toStringAsFixed(1)} Ac', 'SIZE', context.textPrimary),
+        const SizedBox(width: 10),
+        _statCard(context, '$days', 'DAYS', context.textPrimary),
+        const SizedBox(width: 10),
+        _statCard(context, f.healthStatus.label, 'HEALTH', f.healthStatus.color),
+      ]);
+
+  Widget _statCard(BuildContext context, String value, String label, Color valueColor) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            color: context.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.border.withValues(alpha: 0.4)),
+            boxShadow: iosShadow,
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            Text(value,
+                style: TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.w800, color: valueColor),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 3),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 9,
+                    letterSpacing: 0.8,
+                    color: context.textSecondary,
+                    fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      );
+
+  Widget _locationRow(BuildContext context) => Row(children: [
+        Icon(Icons.location_on_outlined, size: 14, color: context.textSecondary),
+        const SizedBox(width: 4),
+        Expanded(
+            child: Text(f.location,
+                style: TextStyle(fontSize: 12, color: context.textSecondary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis)),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => Navigator.push(
+              context, MaterialPageRoute(builder: (_) => FieldMapScreen(field: f))),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+                color: AppColors.accentLight,
+                borderRadius: BorderRadius.circular(10)),
+            child: Row(children: [
+              const Icon(Icons.map_rounded, size: 13, color: AppColors.primary),
+              const SizedBox(width: 4),
+              const Text('View Map',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary)),
+            ]),
+          ),
+        ),
+      ]);
+
+  Widget _growthTimelineCard(BuildContext context) {
+    final stages = GrowthStage.values;
+    final currentIdx = f.stage.index;
+    return Container(
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
+        boxShadow: iosShadow,
+      ),
+      child: SizedBox(
+        height: 152,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: stages.asMap().entries.map((e) {
+              final i = e.key;
+              final s = e.value;
+              final isViewed = s == _viewedStage;
+              final isPast = i <= currentIdx;
+              return GestureDetector(
+                onTap: () => setState(() => _viewedStage = s),
+                child: SizedBox(
+                  width: 76,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: CustomPaint(
+                            size: Size.infinite,
+                            painter: RicePlantPainter(i, active: isPast),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      // Dot row
+                      SizedBox(
+                        height: 22,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (i > 0)
+                              Positioned(
+                                left: 0,
+                                top: 10,
+                                child: Container(
+                                  width: 38,
+                                  height: 2,
+                                  color: i <= currentIdx
+                                      ? AppColors.primary
+                                      : context.border,
+                                ),
+                              ),
+                            if (i < stages.length - 1)
+                              Positioned(
+                                right: 0,
+                                top: 10,
+                                child: Container(
+                                  width: 38,
+                                  height: 2,
+                                  color: i < currentIdx
+                                      ? AppColors.primary
+                                      : context.border,
+                                ),
+                              ),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: isViewed ? 15 : 10,
+                              height: isViewed ? 15 : 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isPast
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                border: Border.all(
+                                  color: AppColors.primary,
+                                  width:
+                                      isViewed ? 2.5 : (isPast ? 0 : 1.5),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        s.shortLabel,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight:
+                              isViewed ? FontWeight.w700 : FontWeight.w500,
+                          color: isViewed
+                              ? AppColors.primary
+                              : context.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _stageDetailCard(BuildContext context, int days, double progressPct) {
+    final s = _viewedStage;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
+        boxShadow: iosShadow,
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(s.shortLabel,
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: context.textPrimary)),
+              const SizedBox(height: 6),
+              Text(s.description,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: context.textSecondary,
+                      height: 1.4)),
+              const SizedBox(height: 12),
+              Text('Estimated days',
+                  style: TextStyle(fontSize: 11, color: context.textSecondary)),
+              Text(s.dayRange,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary)),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 80,
+            height: 110,
+            child: CustomPaint(painter: RicePlantPainter(s.index, active: true)),
           ),
         ]),
-      )),
-    ],
-  ));
-
-  Widget _activityCard() => _card(child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _cardHeader('Activity Log', Icons.history_rounded, AppColors.primary, AppColors.accentLight),
-      const SizedBox(height: 12),
-      ...f.activityLog.take(6).map((log) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(width: 6, height: 6, margin: const EdgeInsets.only(top: 5),
-            decoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle)),
-          const SizedBox(width: 10),
-          Expanded(child: Text(log, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4))),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.accentLight.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Tips',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+            const SizedBox(height: 4),
+            Text(s.note,
+                style: TextStyle(
+                    fontSize: 12, color: context.textSecondary, height: 1.5)),
+          ]),
+        ),
+        const SizedBox(height: 14),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('Progress',
+              style: TextStyle(fontSize: 12, color: context.textSecondary)),
+          Text('${(progressPct * 100).round()}%',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary)),
         ]),
-      )),
-    ],
-  ));
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: LinearProgressIndicator(
+            value: progressPct,
+            backgroundColor: context.secondary,
+            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+            minHeight: 8,
+          ),
+        ),
+      ]),
+    );
+  }
 
-  Widget _cardHeader(String title, IconData icon, Color color, Color bg) => Row(children: [
-    Container(width: 32, height: 32,
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-      child: Icon(icon, color: color, size: 17)),
-    const SizedBox(width: 10),
-    Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary)),
-  ]);
+  Widget _diseaseCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 2,
+              offset: const Offset(0, 1)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 24,
+              offset: const Offset(0, 8)),
+        ],
+      ),
+      child: f.scanHistory.isEmpty
+          ? Column(children: [
+              Icon(Icons.grass_rounded, size: 36, color: context.textSecondary),
+              const SizedBox(height: 8),
+              Text('No disease history.',
+                  style:
+                      TextStyle(fontSize: 13, color: context.textSecondary)),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: _applyTreatment,
+                child: const Text('Run first scan →',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary)),
+              ),
+            ])
+          : Column(
+              children: f.scanHistory.asMap().entries.map((e) {
+                final s = e.value;
+                final isLast = e.key == f.scanHistory.length - 1;
+                return Column(children: [
+                  Row(children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: s.severity == 'High'
+                            ? AppColors.redLight
+                            : AppColors.amberLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.bug_report_outlined,
+                          color: s.severity == 'High'
+                              ? AppColors.red
+                              : AppColors.amber,
+                          size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                          Text(s.diseaseName,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  color: context.textPrimary)),
+                          Text(
+                              '${s.date.day}/${s.date.month}/${s.date.year} · ${s.confidence.toStringAsFixed(0)}% confidence',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.textSecondary)),
+                        ])),
+                    GestureDetector(
+                      onTap: _applyTreatment,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: s.severity == 'High'
+                              ? AppColors.redLight
+                              : AppColors.amberLight,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(s.severity,
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: s.severity == 'High'
+                                    ? AppColors.red
+                                    : AppColors.amber)),
+                      ),
+                    ),
+                  ]),
+                  if (!isLast)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(height: 1, color: context.border),
+                    ),
+                ]);
+              }).toList()),
+    );
+  }
 
-  Widget _card({required Widget child}) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 8, offset: const Offset(0, 2))],
-    ),
-    child: child,
-  );
-
-  String _formatDate(DateTime d) {
-    final diff = DateTime.now().difference(d).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Yesterday';
-    return '$diff days ago';
+  Widget _notesCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 2,
+              offset: const Offset(0, 1)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 24,
+              offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(
+            child: TextField(
+              controller: _noteCtrl,
+              decoration: InputDecoration(
+                hintText: 'Add observation...',
+                hintStyle: TextStyle(color: context.textSecondary, fontSize: 13),
+                filled: true,
+                fillColor: context.secondary,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none),
+                enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              if (_noteCtrl.text.trim().isNotEmpty) {
+                setState(() {
+                  _notes.insert(0, _noteCtrl.text.trim());
+                  _noteCtrl.clear();
+                });
+              }
+            },
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Text('Add',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13)),
+            ),
+          ),
+        ]),
+        if (_notes.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ..._notes.map((n) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: context.secondary.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(n,
+                      style:
+                          TextStyle(fontSize: 13, color: context.textPrimary)),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                    style:
+                        TextStyle(fontSize: 11, color: context.textSecondary),
+                  ),
+                ]),
+              )),
+        ] else ...[
+          const SizedBox(height: 8),
+          Text('No notes yet.',
+              style: TextStyle(fontSize: 13, color: context.textSecondary)),
+        ],
+      ]),
+    );
   }
 }

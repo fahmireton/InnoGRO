@@ -1,42 +1,70 @@
 import 'package:flutter/material.dart';
 
-enum GrowthStage { seedling, tillering, booting, flowering, ripening, harvest }
+// 6 stages matching the source exactly
+enum GrowthStage { seedling, vegetative, tillering, flowering, ripening, harvest }
 
 extension GrowthStageX on GrowthStage {
   String get label => const {
     GrowthStage.seedling: 'Seedling',
+    GrowthStage.vegetative: 'Vegetative',
     GrowthStage.tillering: 'Tillering',
-    GrowthStage.booting: 'Booting',
     GrowthStage.flowering: 'Flowering',
     GrowthStage.ripening: 'Ripening',
-    GrowthStage.harvest: 'Ready to Harvest',
+    GrowthStage.harvest: 'Harvest',
+  }[this]!;
+
+  String get dayRange => const {
+    GrowthStage.seedling: '0–20 days',
+    GrowthStage.vegetative: '20–45 days',
+    GrowthStage.tillering: '45–65 days',
+    GrowthStage.flowering: '65–85 days',
+    GrowthStage.ripening: '85–110 days',
+    GrowthStage.harvest: '110+ days',
+  }[this]!;
+
+  String get note => const {
+    GrowthStage.seedling: 'Nursery: ensure clean seed and shaded warmth.',
+    GrowthStage.vegetative: 'Top dressing nitrogen; watch for stem borers.',
+    GrowthStage.tillering: 'Critical water — keep 5cm flooded depth.',
+    GrowthStage.flowering: 'Most vulnerable to blast; preventive spray helps.',
+    GrowthStage.ripening: 'Drain field 10 days before harvest.',
+    GrowthStage.harvest: 'Harvest in morning for best grain quality.',
   }[this]!;
 
   String get emoji => const {
     GrowthStage.seedling: '🌱',
-    GrowthStage.tillering: '🌿',
-    GrowthStage.booting: '🎋',
-    GrowthStage.flowering: '🌾',
-    GrowthStage.ripening: '🟡',
-    GrowthStage.harvest: '✅',
+    GrowthStage.vegetative: '🌿',
+    GrowthStage.tillering: '🎋',
+    GrowthStage.flowering: '🌸',
+    GrowthStage.ripening: '🌾',
+    GrowthStage.harvest: '🌾',
+  }[this]!;
+
+  String get shortLabel => const {
+    GrowthStage.seedling: 'Seed',
+    GrowthStage.vegetative: 'Baby Plant',
+    GrowthStage.tillering: 'Growing',
+    GrowthStage.flowering: 'Flowering',
+    GrowthStage.ripening: 'Mature',
+    GrowthStage.harvest: 'Harvest',
+  }[this]!;
+
+  String get description => const {
+    GrowthStage.seedling: 'The seed is planted and waiting to sprout.',
+    GrowthStage.vegetative: 'The plant has sprouted and is developing its first leaves.',
+    GrowthStage.tillering: 'The plant is growing taller and getting stronger.',
+    GrowthStage.flowering: 'The plant is entering its flowering phase.',
+    GrowthStage.ripening: 'The plant is fully grown and almost ready to harvest.',
+    GrowthStage.harvest: 'Time to harvest! Enjoy your healthy crops.',
   }[this]!;
 
   double get progress => const {
-    GrowthStage.seedling: 0.1,
-    GrowthStage.tillering: 0.3,
-    GrowthStage.booting: 0.5,
-    GrowthStage.flowering: 0.65,
-    GrowthStage.ripening: 0.85,
+    GrowthStage.seedling: 0.0,
+    GrowthStage.vegetative: 0.2,
+    GrowthStage.tillering: 0.4,
+    GrowthStage.flowering: 0.6,
+    GrowthStage.ripening: 0.82,
     GrowthStage.harvest: 1.0,
-  }[this]!;
-
-  int get daysToHarvest => const {
-    GrowthStage.seedling: 110,
-    GrowthStage.tillering: 80,
-    GrowthStage.booting: 55,
-    GrowthStage.flowering: 35,
-    GrowthStage.ripening: 15,
-    GrowthStage.harvest: 0,
   }[this]!;
 }
 
@@ -50,15 +78,28 @@ extension HealthStatusX on HealthStatus {
   }[this]!;
 
   Color get color => const {
-    HealthStatus.healthy: Color(0xFF16A34A),
+    HealthStatus.healthy: Color(0xFF52B788),
     HealthStatus.watch: Color(0xFFF59E0B),
     HealthStatus.critical: Color(0xFFDC2626),
   }[this]!;
 
   Color get bgColor => const {
     HealthStatus.healthy: Color(0xFFDCFCE7),
-    HealthStatus.watch: Color(0xFFFFF7ED),
+    HealthStatus.watch: Color(0xFFFFF3CD),
     HealthStatus.critical: Color(0xFFFEE2E2),
+  }[this]!;
+
+  // Gradient colors for field card header
+  Color get gradientStart => const {
+    HealthStatus.healthy: Color(0xFF1E8C58),
+    HealthStatus.watch: Color(0xFFCC7A08),
+    HealthStatus.critical: Color(0xFFBB2020),
+  }[this]!;
+
+  Color get gradientEnd => const {
+    HealthStatus.healthy: Color(0xFF9EEDC4),
+    HealthStatus.watch: Color(0xFFF9D870),
+    HealthStatus.critical: Color(0xFFF4A0A0),
   }[this]!;
 }
 
@@ -67,7 +108,6 @@ class ScanRecord {
   final String severity;
   final DateTime date;
   final double confidence;
-
   const ScanRecord({
     required this.diseaseName,
     required this.severity,
@@ -89,6 +129,9 @@ class PaddyField {
   final DateTime plantedDate;
   List<String> activityLog;
   List<ScanRecord> scanHistory;
+  String variety;
+  double? latitude;
+  double? longitude;
 
   PaddyField({
     required this.id,
@@ -103,6 +146,9 @@ class PaddyField {
     required this.plantedDate,
     required this.activityLog,
     required this.scanHistory,
+    required this.variety,
+    this.latitude,
+    this.longitude,
   });
 }
 
@@ -131,13 +177,16 @@ List<PaddyField> sampleFields = [
         confidence: 89.7,
       ),
     ],
+    variety: 'MR219',
+    latitude: 6.1184,
+    longitude: 100.3685,
   ),
   PaddyField(
     id: '2',
     name: 'Sawah Selatan',
     location: 'Kedah, Malaysia',
     areaMorgen: 1.8,
-    stage: GrowthStage.booting,
+    stage: GrowthStage.ripening,
     healthStatus: HealthStatus.healthy,
     waterLevel: 80,
     fertilizerLevel: 75,
@@ -150,5 +199,8 @@ List<PaddyField> sampleFields = [
       'Planted MR263 variety',
     ],
     scanHistory: [],
+    variety: 'MR263',
+    latitude: 6.1100,
+    longitude: 100.3600,
   ),
 ];

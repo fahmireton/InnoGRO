@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 import 'theme.dart';
+import 'app_theme_notifier.dart';
 import 'screens/shell.dart';
+import 'screens/login_screen.dart';
+import 'services/firestore_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  FirestoreService.seedExpertsIfEmpty();
+  FirestoreService.seedOutbreaksIfEmpty();
   runApp(const VisionGROApp());
 }
 
@@ -14,11 +23,25 @@ class VisionGROApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'VisionGRO',
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(),
-      home: const AppShell(),
+    return ListenableBuilder(
+      listenable: appTheme,
+      builder: (_, __) => MaterialApp(
+        title: 'VisionGRO',
+        debugShowCheckedModeBanner: false,
+        themeMode: appTheme.mode,
+        theme: buildTheme(),
+        darkTheme: buildDarkTheme(),
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+            if (snap.hasData && snap.data != null) return const AppShell();
+            return const LoginScreen();
+          },
+        ),
+      ),
     );
   }
 }

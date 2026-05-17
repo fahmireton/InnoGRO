@@ -7,275 +7,385 @@ import 'result_screen.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
-
   @override
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
 class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateMixin {
+  final List<String?> _images = [null, null, null];
   bool _analyzing = false;
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnim;
+  double _sliderValue = 0.5;
+  late AnimationController _rotCtrl;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
-    _pulseAnim = Tween(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
+    _rotCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
+      ..repeat();
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _rotCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pick(ImageSource source) async {
     try {
-      final picker = ImagePicker();
-      final file = await picker.pickImage(source: source, imageQuality: 85);
-      if (file == null || !mounted) return;
-      await _runAnalysis();
-    } catch (_) {
-      await _runAnalysis();
-    }
+      final file = await ImagePicker().pickImage(source: source, imageQuality: 85);
+      if (file != null && mounted) {
+        final empty = _images.indexWhere((e) => e == null);
+        if (empty != -1) setState(() => _images[empty] = file.path);
+      }
+    } catch (_) {}
   }
 
-  Future<void> _runAnalysis() async {
+  Future<void> _diagnose() async {
     setState(() => _analyzing = true);
-    await Future.delayed(const Duration(milliseconds: 3200));
+    await Future.delayed(const Duration(milliseconds: 3500));
     if (!mounted) return;
     setState(() => _analyzing = false);
-
-    final rand = Random();
-    final disease = mockDiseases[rand.nextInt(mockDiseases.length - 1)];
-
+    final disease = mockDiseases[Random().nextInt(mockDiseases.length - 1)];
     Navigator.push(context, MaterialPageRoute(builder: (_) => ResultScreen(disease: disease)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        title: const Text('AI Disease Scan'),
-        backgroundColor: AppColors.primary,
-      ),
-      body: _analyzing ? _buildAnalyzing() : _buildScanner(),
+      backgroundColor: context.bg,
+      body: Stack(children: [
+        _buildContent(context),
+        if (_analyzing) _buildAnalyzing(),
+      ]),
     );
   }
 
-  Widget _buildScanner() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+  Widget _buildContent(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
         children: [
-          const SizedBox(height: 16),
-          _buildScanArea(),
-          const SizedBox(height: 32),
-          const Text('How to get the best results',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
-          _tip(Icons.light_mode_rounded, 'Good lighting', 'Scan in natural daylight, avoid shadows on the leaf'),
-          _tip(Icons.center_focus_strong_rounded, 'Close-up focus', 'Fill the frame with the affected leaf area'),
-          _tip(Icons.multiple_stop_rounded, 'Multiple angles', 'Take 2–3 photos for better accuracy'),
+          Text('AI Scan',
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800,
+              color: context.textPrimary, letterSpacing: -0.5)),
+          const SizedBox(height: 2),
+          Text('Diagnose plant disease in seconds',
+            style: TextStyle(fontSize: 14, color: context.textSecondary)),
+          const SizedBox(height: 20),
+          _uploadCard(context),
+          const SizedBox(height: 24),
+          Text('HEALTHY VS DISEASED',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+              color: context.textSecondary, letterSpacing: 1.2)),
+          const SizedBox(height: 12),
+          _comparisonCard(context),
         ],
       ),
     );
   }
 
-  Widget _buildScanArea() {
-    return Column(
-      children: [
-        ScaleTransition(
-          scale: _pulseAnim,
-          child: Container(
-            width: double.infinity,
-            height: 240,
-            decoration: BoxDecoration(
-              color: AppColors.accentLight,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.accent.withValues(alpha: 0.4), width: 2),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 80, height: 80,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(24),
+  Widget _uploadCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image slots (3 x aspect-square)
+          Row(
+            children: List.generate(3, (i) => Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: i < 2 ? 8 : 0),
+                child: GestureDetector(
+                  onTap: () => _pick(ImageSource.gallery),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.secondary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: _images[i] != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Icon(Icons.image_rounded, size: 32, color: AppColors.accent),
+                          )
+                        : Icon(Icons.image_outlined, size: 32,
+                            color: context.textSecondary.withValues(alpha: 0.5)),
+                    ),
                   ),
-                  child: const Icon(Icons.document_scanner_rounded, size: 42, color: AppColors.primary),
                 ),
-                const SizedBox(height: 16),
-                const Text('Scan a paddy leaf', style: TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                const SizedBox(height: 6),
-                const Text('Take a photo or upload from gallery',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-              ],
+              ),
+            )),
+          ),
+          const SizedBox(height: 12),
+          Text('Add up to 3 angles for best accuracy.',
+            style: TextStyle(fontSize: 13, color: context.textSecondary)),
+          const SizedBox(height: 14),
+          // Camera / Upload buttons
+          Row(children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _pick(ImageSource.camera),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.camera_alt_outlined, size: 18, color: Colors.white),
+                    SizedBox(width: 6),
+                    Text('Camera', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _pick(ImageSource.gallery),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: context.secondary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.image_outlined, size: 18, color: context.textPrimary),
+                    const SizedBox(width: 6),
+                    Text('Upload', style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          // Diagnose button — solid primary, rounded-full
+          GestureDetector(
+            onTap: _diagnose,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 16, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(Icons.auto_awesome, size: 18, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Diagnose with AI',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+              ]),
             ),
           ),
-        ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _pickImage(ImageSource.camera),
-                icon: const Icon(Icons.camera_alt_rounded),
-                label: const Text('Camera'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ],
+      ),
+    );
+  }
+
+  Widget _comparisonCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: context.border.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Image comparison slider
+        ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: LayoutBuilder(builder: (context, constraints) {
+            final w = constraints.maxWidth;
+            return SizedBox(
+              height: 210,
+              child: Stack(children: [
+                // Diseased paddy — full background
+                SizedBox(
+                  width: w, height: 210,
+                  child: Image.asset('assets/images/paddy_diseased.png', fit: BoxFit.cover),
                 ),
-              ),
+                // Healthy paddy — clipped to left slider fraction
+                ClipRect(
+                  child: SizedBox(
+                    width: w * _sliderValue, height: 210,
+                    child: OverflowBox(
+                      maxWidth: w,
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: w, height: 210,
+                        child: Image.asset('assets/images/paddy_healthy.png', fit: BoxFit.cover),
+                      ),
+                    ),
+                  ),
+                ),
+                // Divider line at slider position
+                Positioned(
+                  left: w * _sliderValue - 1,
+                  top: 0, bottom: 0,
+                  child: Container(width: 2, color: Colors.white),
+                ),
+                // Handle circle on divider
+                Positioned(
+                  left: w * _sliderValue - 16,
+                  top: 0, bottom: 0,
+                  child: Center(
+                    child: Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 6)],
+                      ),
+                      child: const Icon(Icons.compare_arrows_rounded, size: 18, color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                // Labels
+                Positioned(left: 12, bottom: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20)),
+                    child: const Text('Healthy', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                  )),
+                Positioned(right: 12, bottom: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: AppColors.red.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20)),
+                    child: const Text('Diseased', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                  )),
+              ]),
+            );
+          }),
+        ),
+        // Slider control
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 4,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: context.secondary,
+              thumbColor: AppColors.primary,
+              overlayColor: AppColors.primary.withValues(alpha: 0.1),
             ),
+            child: Slider(value: _sliderValue, onChanged: (v) => setState(() => _sliderValue = v)),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Center(child: Text('Drag to compare visual cues',
+            style: TextStyle(fontSize: 12, color: context.textSecondary))),
+        ),
+        // Factual info section
+        Divider(height: 1, color: context.border),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Healthy column
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
+                const SizedBox(width: 6),
+                const Text('Healthy Paddy', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+              ]),
+              const SizedBox(height: 8),
+              ...[
+                'Deep, uniform green leaves',
+                'Upright & turgid leaf blades',
+                '5–8 cm standing water depth',
+                'No spots or discoloration',
+                '5–7 tillers per plant',
+              ].map((s) => Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('• ', style: TextStyle(fontSize: 12, color: AppColors.accent)),
+                  Expanded(child: Builder(builder: (ctx) => Text(s, style: TextStyle(fontSize: 12, color: ctx.textSecondary, height: 1.3)))),
+                ]),
+              )),
+            ])),
             const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _pickImage(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library_rounded),
-                label: const Text('Gallery'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary, width: 1.5),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
-            ),
-          ],
+            Container(width: 1, height: 120, color: context.border),
+            const SizedBox(width: 12),
+            // Diseased column
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.red, shape: BoxShape.circle)),
+                const SizedBox(width: 6),
+                const Text('Diseased Paddy', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.red)),
+              ]),
+              const SizedBox(height: 8),
+              ...[
+                'Yellowing from leaf tips & edges',
+                'Brown lesions or water-soaked spots',
+                'Drooping or wilting leaves',
+                'Stunted & uneven plant height',
+                'Early senescence & poor tillering',
+              ].map((s) => Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('• ', style: TextStyle(fontSize: 12, color: AppColors.red)),
+                  Expanded(child: Builder(builder: (ctx) => Text(s, style: TextStyle(fontSize: 12, color: ctx.textSecondary, height: 1.3)))),
+                ]),
+              )),
+            ])),
+          ]),
         ),
-      ],
+      ]),
     );
   }
 
   Widget _buildAnalyzing() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _PulsingRing(),
-            const SizedBox(height: 40),
-            const Text('Analysing your crop...', style: TextStyle(
-              fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary, letterSpacing: -0.3)),
-            const SizedBox(height: 10),
-            const Text('Our AI is scanning for 50+ rice diseases.\nThis takes just a moment.',
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.4),
+        child: Center(
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            // Rotating scan icon in circle
+            AnimatedBuilder(
+              animation: _rotCtrl,
+              builder: (_, child) => Transform.rotate(
+                angle: _rotCtrl.value * 2 * pi,
+                child: child,
+              ),
+              child: Container(
+                width: 80, height: 80,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.document_scanner_rounded,
+                  color: Colors.white, size: 36),
+              ),
+            ),
+            const SizedBox(height: 28),
+            const Text('Analysing your crop...',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
+                color: Colors.white, letterSpacing: -0.3)),
+            const SizedBox(height: 8),
+            const Text('AI scanning for 50+ rice diseases',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5)),
-            const SizedBox(height: 40),
-            _AnalyzingStep('Loading disease database', true),
-            const SizedBox(height: 10),
-            _AnalyzingStep('Detecting leaf features', true),
-            const SizedBox(height: 10),
-            _AnalyzingStep('Running AI classification...', false),
-          ],
+              style: TextStyle(fontSize: 14, color: Colors.white70)),
+          ]),
         ),
       ),
-    );
-  }
-
-  Widget _tip(IconData icon, String title, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: AppColors.accentLight, borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-            ],
-          )),
-        ],
-      ),
-    );
-  }
-}
-
-class _PulsingRing extends StatefulWidget {
-  @override
-  State<_PulsingRing> createState() => _PulsingRingState();
-}
-
-class _PulsingRingState extends State<_PulsingRing> with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
-    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
-  }
-
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) => Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 120 + (_anim.value * 40),
-            height: 120 + (_anim.value * 40),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.accent.withValues(alpha: 0.05 + (0.1 * (1 - _anim.value))),
-            ),
-          ),
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.accentLight,
-            ),
-            child: const Icon(Icons.biotech_rounded, size: 48, color: AppColors.primary),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AnalyzingStep extends StatelessWidget {
-  final String label;
-  final bool done;
-  const _AnalyzingStep(this.label, this.done);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        done
-          ? const Icon(Icons.check_circle_rounded, color: AppColors.accent, size: 18)
-          : const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(
-              strokeWidth: 2, color: AppColors.primary)),
-        const SizedBox(width: 10),
-        Text(label, style: TextStyle(
-          fontSize: 13,
-          color: done ? AppColors.textSecondary : AppColors.textPrimary,
-          fontWeight: done ? FontWeight.w400 : FontWeight.w600,
-        )),
-      ],
     );
   }
 }
