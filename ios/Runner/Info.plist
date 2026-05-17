@@ -58,7 +58,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.ukm.innogro</string>
+				<string>com.innogro.app</string>
 			</array>
 		</dict>
 	</array>
